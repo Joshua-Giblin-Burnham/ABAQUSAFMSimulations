@@ -10,8 +10,8 @@ $$ X_{tangent} = R\cos\theta$$
 $$ Y_{tangent} = R(1-\sin\theta)$$
 
 ### Axisymmetric Simulation of Indentation of Elastic Sphere 
-   <p align="center">
-  <img width="460" height="300" src="[https://picsum.photos/460/300](https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/34427ea5-5f61-4b48-8891-b68d9679c102)">
+<p align="center">
+   <img width="460" height="300" src="https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/34427ea5-5f61-4b48-8891-b68d9679c102">
 </p>
 
 ![Double Contact AFM tip-1](https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/34427ea5-5f61-4b48-8891-b68d9679c102)
