@@ -10,7 +10,11 @@ $$ X_{tangent} = R\cos\theta$$
 $$ Y_{tangent} = R(1-\sin\theta)$$
 
 ### Axisymmetric Simulation of Indentation of Elastic Sphere 
-    ![Double Contact AFM tip-1](https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/34427ea5-5f61-4b48-8891-b68d9679c102)
+   <p align="center">
+  <img width="460" height="300" src="[https://picsum.photos/460/300](https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/34427ea5-5f61-4b48-8891-b68d9679c102)">
+</p>
+
+![Double Contact AFM tip-1](https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/34427ea5-5f61-4b48-8891-b68d9679c102)
 
 Applying ABAQUS to AFM indentation into elastic spheres of varying radii provides a robust validation of simulation accuracy through comparison with the theoretical contact models. Following the common experimental determination of Young modulus, theoretical contact models are used to fit the Young modulus for simulated indentation force curves of elastic spheres. The elastic sphere moves freely with a fixed, rigid base beneath. Restricting indentation to the z-axis allows the modelling to be asymmetrically centred around the z-axis.
 
