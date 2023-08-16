@@ -10,12 +10,31 @@ Within a seperate python script the simulator code can be imported by either app
 
     import sys
     sys.path.insert(1, 'C:\\path\\to\\directory\\') 
-    from AFM_ABAQUS_Simulation_Code import *`
+    from AFM_ABAQUS_Simulation_Code import *
+    
+    host, port, username, password, None, localPath, abqCommand, fileName, subData,              
+    pdb, rotation, surfaceApprox, indentorType, rIndentor, theta_degrees, tip_length,             
+    indentionDepth, forceRef, contrast, binSize, clearance, meshSurface, meshBase, meshIndentor,   
+    timePeriod, timeInterval = ...
+    
+    AFMSimulation(host, port, username, password, None, localPath, abqCommand, fileName, subData, 
+    pdb, rotation, surfaceApprox, indentorType, rIndentor, theta_degrees, tip_length,
+    indentionDepth, forceRef, contrast, binSize, clearance, meshSurface, meshBase, meshIndentor,
+    timePeriod, timeInterval)
 
 or by either copying the AFM_ABAQUS_Simulation_Code.py script to the same directory or to the main python path (for jupyter notebook/spyder this will be main anaconda directory) and importing as:
 
-`from AFM_ABAQUS_Simulation_Code import *`
-
+        from AFM_ABAQUS_Simulation_Code import *
+        
+        host, port, username, password, None, localPath, abqCommand, fileName, subData,              
+        pdb, rotation, surfaceApprox, indentorType, rIndentor, theta_degrees, tip_length,             
+        indentionDepth, forceRef, contrast, binSize, clearance, meshSurface, meshBase, meshIndentor,   
+        timePeriod, timeInterval = ...
+        
+        AFMSimulation(host, port, username, password, None, localPath, abqCommand, fileName, subData, 
+        pdb, rotation, surfaceApprox, indentorType, rIndentor, theta_degrees, tip_length,
+        indentionDepth, forceRef, contrast, binSize, clearance, meshSurface, meshBase, meshIndentor,
+        timePeriod, timeInterval)
 
 ## Common errors:
 - Some modules may require Python 3.9 or newer. 
