@@ -1,4 +1,4 @@
-# ABAQUSAFMSimulations
+# ABAQUS AFM Simulations
 ## Introduction
 Repository for Masters project code simulating AFM imaging using ABAQUS/FEM and various FEM simulations. There are four different simulations.
 
