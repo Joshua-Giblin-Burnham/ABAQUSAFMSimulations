@@ -3,16 +3,16 @@
 Repository for Masters project code simulating AFM imaging using ABAQUS/FEM and various FEM simulations. There are four different simulations.
 
 ### Axisymmetric Simulation of Indentation of Elastic Sphere 
-xfun::embed_file(https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/files/12361583/Double.Contact.AFM.tip.pdf)
+![Double Contact AFM tip-1](https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/34427ea5-5f61-4b48-8891-b68d9679c102)
 
 ### Three Dimensional Simulation of Compression along scanline of a Hemisphere 
-[Hemisphere-Setup-Manuscript.pdf](https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/files/12361588/Hemisphere-Setup-Manuscript.pdf)
+![Hemisphere-Setup-Manuscript-1](https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/65437d15-c4f1-46d0-b95a-1cf20c8e5d52)
 
 ### Three Dimensional Simulation of Compression along scanline of a Periodic Structure 
-[Wave-SetUp-Manuscript.pdf](https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/files/12361599/Wave-SetUp-Manuscript.pdf)
+![Wave-SetUp-Manuscript-1](https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/e67616a7-dc1d-411d-96ea-34544093488e)
 
 ### AFM Image Simulator
-[ScanPositions diagram.pdf](https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/files/12361606/ScanPositions.diagram.pdf)
+![ScanPositions diagram-1](https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/d4e75cc7-bcda-4fda-91d0-964daafa6fab)
 
 ## Runnig Simulator
 All Jupyter notebooks(.ipynb) are self contained, they produce the input files, in the specified local working directory, for each simulation so best run from own self contained directory. The notebooks contain breakdown and discription of code function.
