@@ -11,10 +11,8 @@ import os
 import time
 from datetime import timedelta
 
-
 # -----------------------------------------------Server commands--------------------------------------------------------
 import paramiko
-from scp import SCPClient
 
 # --------------------------------------------------Mathematical Imports------------------------------------------------
 # Importing relevant maths and graphing modules
