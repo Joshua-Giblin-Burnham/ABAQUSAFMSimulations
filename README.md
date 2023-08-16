@@ -3,7 +3,7 @@
 Repository for Masters project code simulating AFM imaging using ABAQUS/FEM and various FEM simulations. There are four different simulations.
 
 ### Axisymmetric Simulation of Indentation of Elastic Sphere 
-[Double Contact AFM tip.pdf](https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/files/12361583/Double.Contact.AFM.tip.pdf)
+xfun::embed_file(https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/files/12361583/Double.Contact.AFM.tip.pdf)
 
 ### Three Dimensional Simulation of Compression along scanline of a Hemisphere 
 [Hemisphere-Setup-Manuscript.pdf](https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/files/12361588/Hemisphere-Setup-Manuscript.pdf)
