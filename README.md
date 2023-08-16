@@ -8,13 +8,25 @@ All Jupyter notebooks(.ipynb) are self contained, they produce the input files, 
 ### Importing Python files
 Within a seperate python script the simulator code can be imported by either appending the script using system command and path to directory holding the AFM_ABAQUS_Simulation_Code.py file:
 
-`import sys \n
-sys.path.insert(1, 'C:\\path\\to\\directory\\') \n
+`import sys\ 
+sys.path.insert(1, 'C:\\path\\to\\directory\\') \
 from AFM_ABAQUS_Simulation_Code import *`
 
 or by either copying the AFM_ABAQUS_Simulation_Code.py script to the same directory or to the main python path (for jupyter notebook/spyder this will be main anaconda directory) and importing as:
 
-`from AFM_ABAQUS_Simulation_Code import *`
+`from AFM_ABAQUS_Simulation_Code import *\
+host, port, username, password, None, localPath, abqCommand, fileName, subData, 
+              
+pdb, rotation, surfaceApprox, indentorType, rIndentor, theta_degrees, tip_length,
+              
+indentionDepth, forceRef, contrast, binSize, clearance, meshSurface, meshBase, meshIndentor,  
+  
+timePeriod, timeInterval = ...\
+
+AFMSimulation(host, port, username, password, None, localPath, abqCommand, fileName, subData,\ 
+              pdb, rotation, surfaceApprox, indentorType, rIndentor, theta_degrees, tip_length,\
+              indentionDepth, forceRef, contrast, binSize, clearance, meshSurface, meshBase, meshIndentor,\ 
+              timePeriod, timeInterval)`
 
 
 ## Common errors:
