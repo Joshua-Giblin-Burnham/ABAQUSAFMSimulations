@@ -18,21 +18,21 @@ Applying ABAQUS to AFM indentation into elastic spheres of varying radii provide
 
 ### Three Dimensional Simulation of Compression along scanline of a Hemisphere 
 <p align="center">
-   <img width="460" height="300" src="https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/2f49686f-843e-42fd-8c4e-779dc98c97da">
+   <img width="360" height="300" src="https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/2f49686f-843e-42fd-8c4e-779dc98c97da">
 </p>
 
 To establish how AFM measures the topography and nanomechanics of simple geometries, we probed imaging of elastic hemispheres. Simulations focused on the perceived compression of the structure's central scanline. The spherical/cylindrical structures model the two-dimensional compression of DNA imaging along the transverse axis The hemisphere is modelled as a three-dimensional elastic part in ABAQUS with a fixed, rigid base beneath. Unlike the indentation of a full sphere with a single contact point at the base, the fixed base of a hemisphere alleviates the compression of the surface. 
 
 ### Three Dimensional Simulation of Compression along scanline of a Periodic Structure 
 <p align="center">
-   <img width="460" height="300" src="https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/e67616a7-dc1d-411d-96ea-34544093488e">
+   <img width="360" height="300" src="https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/e67616a7-dc1d-411d-96ea-34544093488e">
 </p>
 
 AFM resolution is commonly indicated by reference to structures that are at least locally periodic, for example, in atomic resolution mapping at a solid-liquid interface, in identification of recurrent features in a two-dimensional lattice of membrane proteins, or the distinction of the two strands of the double helix along a DNA molecule. Therefore, we considered AFM measurements on a periodic soft material where simulations focused on the compression produced from a single scan along the centre axis of the structures. As shown above, the structure has a wavelength $\lambda = 10nm$ and amplitude, $A_{Sample} = 10nm $. 
 
 ### AFM Image Simulator
 <p align="center">
-   <img width="460" height="300" src="https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/d4e75cc7-bcda-4fda-91d0-964daafa6fab">
+   <img width="650" height="300" src="https://github.com/Joshua-Giblin-Burnham/ABAQUSAFMSimulations/assets/97748069/d4e75cc7-bcda-4fda-91d0-964daafa6fab">
 </p>
     
 Simulating AFM images requires the calculation of contours of constant indentation force across a sample. Using Finite Element Modelling (FEM), the sample surface and probe tip geometry are recreated, and AFM raster scan dynamics are replicated by performing independent indentations across the surface. Biological structures are produced using Protein Data Bank (PDB) files with geometric dimensions in $\text{\AA}$. For simplicity, the biomolecule is modelled as an elastic material produced from the assembly of the individual atoms (with van der Waals radius). The molecule is partially embedded in a rigid base/ substrate and fixed at its base to simulate a soft molecule absorbed onto a solid support. The structure is assumed to be a continuous, homogeneous and isotropy elastic material. 
