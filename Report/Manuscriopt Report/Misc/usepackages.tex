@@ -1,0 +1,84 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%This is the LaTeX ARTICLE template for RSC journals
+%Copyright The Royal Society of Chemistry 2016
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[twoside,twocolumn,9pt]{article}
+\usepackage{extsizes}
+\usepackage[super,sort&compress,comma]{natbib} 
+\usepackage[version=3]{mhchem}
+\usepackage[left=1.5cm, right=1.5cm, top=1.785cm, bottom=2.0cm]{geometry}
+\usepackage{balance}
+\usepackage{mathptmx}
+\usepackage{sectsty}
+\usepackage{graphicx} 
+\usepackage{lastpage}
+\usepackage[format=plain,justification=justified,singlelinecheck=false,font={stretch=1.125,small,sf},labelfont=bf,labelsep=space]{caption}
+\usepackage{float}
+\usepackage{fancyhdr}
+\usepackage{fnpos}
+\usepackage[english]{babel}
+\addto{\captionsenglish}{%
+  \renewcommand{\refname}{Notes and references}
+}
+\usepackage{array}
+\usepackage{droidsans}
+\usepackage{charter}
+\usepackage[T1]{fontenc}
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{setspace}
+\usepackage[compact]{titlesec}
+\usepackage[colorlinks=true, allcolors=black]{hyperref}
+%%%Please don't disable any packages in the preamble, as this may cause the template to display incorrectly.%%%
+
+\usepackage{epstopdf}%This line makes .eps figures into .pdf - please comment out if not required.
+
+\definecolor{cream}{RGB}{222,217,201}
+
+
+
+% % Language setting
+% \usepackage[english]{babel}
+
+% % Set page size and margins
+% \usepackage[a4paper,top=2cm,bottom=2cm,left=2.5cm,right=2.5cm,marginparwidth=1.5cm]{geometry}
+
+% %%%%%%%%%%%%%%%%%%%%%%%% Useful packages %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+% \usepackage[page,toc,titletoc,title]{appendix}
+% \usepackage{amsmath}
+% \usepackage{amssymb}
+% \usepackage{graphicx}
+% \usepackage{siunitx}
+% \usepackage{float}
+% \usepackage[export]{adjustbox}
+% \usepackage[colorlinks=true, allcolors=black]{hyperref}
+% \usepackage[nottoc,numbib]{tocbibind}
+% \usepackage{nameref}
+% \usepackage{pdfpages}
+% \usepackage{parskip}
+% \usepackage{float}
+% \usepackage{url}
+% \usepackage{array}
+% \usepackage{multirow}
+% \usepackage{csquotes}
+% \usepackage{fancyhdr}
+% \usepackage{multicol}
+% \usepackage{verbatim}
+% \usepackage{tikz}
+% \usepackage{setspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% Caption Setup %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \usepackage[format=plain, font=it]{caption}
+\usepackage{caption} 
+\usepackage{subcaption}
+
+\renewcommand{\thesubfigure}{\textbf{\Alph{subfigure}} }
+\DeclareCaptionLabelFormat{plain}{#2}
+
+\captionsetup[figure]{labelfont=bf, font=small}
+\captionsetup[subfigure]{labelformat=plain, justification=raggedright, singlelinecheck=false}
+
+
+
+

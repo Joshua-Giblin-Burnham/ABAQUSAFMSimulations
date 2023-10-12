@@ -1,0 +1,74 @@
+% Language setting
+\usepackage[english]{babel}
+
+% Set page size and margins
+\usepackage[a4paper,top=2cm,bottom=2cm,left=2.5cm,right=2.5cm,marginparwidth=1.5cm]{geometry}
+
+%%%%%%%%%%%%%%%%%%%%%%%% Useful packages %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+\usepackage[page,toc,titletoc,title]{appendix}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{SIunits}
+\usepackage{float}
+\usepackage[export]{adjustbox}
+\usepackage[colorlinks=true, allcolors=black]{hyperref}
+\usepackage[nottoc,numbib]{tocbibind}
+\usepackage{nameref}
+\usepackage{pdfpages}
+\usepackage{parskip}
+\usepackage{float}
+\usepackage{url}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{csquotes}
+\usepackage{fancyhdr}
+\usepackage{multicol}
+\usepackage{verbatim}
+\usepackage{tikz}
+\usepackage{setspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% Caption Setup %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \usepackage[format=plain, font=it]{caption}
+\usepackage{caption} 
+\usepackage{subcaption}
+
+\renewcommand{\thesubfigure}{\textbf{\Alph{subfigure}} }
+\DeclareCaptionLabelFormat{plain}{#2}
+
+\captionsetup[figure]{labelfont=bf, font=small}
+\captionsetup[subfigure]{labelformat=plain, justification=raggedright, singlelinecheck=false}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%% Biblography setup %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[backend = biber, 
+            style = nature,
+            sorting = none ]{biblatex}
+\addbibresource{references.bib}
+\renewcommand{\cite}[1]{\supercite{#1}}
+\urlstyle{same}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%% Misc Setup %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setlength{\arrayrulewidth}{0.3mm}
+\setlength{\tabcolsep}{13pt}
+\renewcommand{\arraystretch}{2.5}
+
+\definecolor{codegray}{gray}{0.9}
+\newcommand{\code}[1]{\colorbox{codegray}{\texttt{#1} } }
+
+\DeclareUnicodeCharacter{2212}{-}
+
+%%%%%%%%%%%%%%%%%%%%%%%% Word Count Setup %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%TC:group table 0 1
+%TC:group tabular 1 1
+
+\newcommand{\detailtexcount}[1]{%
+  \immediate\write18{texcount -merge -sum -q #1.tex output.bbl > #1.wcdetail }%
+  \verbatiminput{#1.wcdetail}%
+}
+\newcommand{\quickwordcount}[1]{%
+  \immediate\write18{texcount -1 -sum -merge -q #1.tex output.bbl > #1-words.sum }%
+  \input{#1-words.sum} words%
+}
+
