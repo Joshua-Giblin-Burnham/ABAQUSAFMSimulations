@@ -17,9 +17,9 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'AFM_ABAQUS_Simulations'
-copyright = '2023, Joshua Giblin-Burnham'
-author = 'Joshua Giblin-Burnham'
+project = 'abqsims'
+copyright = '2023, J. Giblin-Burnham'
+author = 'J. Giblin-Burnham'
 
 
 # -- General configuration ---------------------------------------------------
