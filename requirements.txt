@@ -21,10 +21,6 @@ line-profiler==4.0.2
 mendeleev==0.12.1
 nbformat==5.5.0
 nglview==3.0.3
-oauthlib==3.2.2
-open3d==0.16.0
-opt-einsum==3.3.0
-protobuf==3.19.6
 py3dmol==2.0.0.post2
 pyabaqus==2022
 pyfiglet==0.8.post1
