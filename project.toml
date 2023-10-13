@@ -32,5 +32,6 @@ pypdf = "*"
 pypdf2 = "*"
 scp = "*"
 paramiko = "*"
+sphinx_rtd_theme = "*"
 
 [project.optional-dependencies] # Define optional dependencies here if you have any

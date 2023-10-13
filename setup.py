@@ -8,5 +8,5 @@ setup(
     author='J. Giblin-Burnham',
     packages=find_packages(),
     install_requires = ["numpy", "matplotlib", "scipy", "absl-py","biopython","keras","mendeleev",
-                        "nglview","py3dmol","pyabaqus","pypdf","pypdf2","scp","paramiko"]
+                        "nglview","py3dmol","pyabaqus","pypdf","pypdf2","scp","paramiko","sphinx_rtd_theme"]
 )
