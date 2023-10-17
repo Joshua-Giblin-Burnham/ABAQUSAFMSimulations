@@ -1,4 +1,4 @@
-Axisymmetric Simulation of Indentation of Elastic Sphere
+Details
 ============================
 
 .. image:: https://raw.githubusercontent.com/Joshua-Giblin-Burnham/ABAQUS-AFM-Simulations/main/Reports/Report%20Latex/Figures/Double%20Contact%20AFM%20tip-1.png?sanitize=true
