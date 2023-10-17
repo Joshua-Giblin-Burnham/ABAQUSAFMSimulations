@@ -23,44 +23,51 @@ Importing Python files:
 
 Within a seperate python script the simulator code can be imported by either appending the package using system command and path to directory holding the files:
 
-    ``import sys``
-    ``sys.path.insert(1, 'C:\\path\\to\\directory\\abqsims') ``
+.. code-block:: python
+    import sys
+    sys.path.insert(1, 'C:\\path\\to\\directory\\abqsims') 
     
 Or by either copying the abqsims package to the same directory or to the main python path (for jupyter notebook/spyder this will be main anaconda directory). Packages can be imported in various ways importing as:
 
-    ``import abqsims``
+.. code-block:: python
+    import abqsims
 
-    ``abqsims.afm.AFMSimulation(...)``
-    ``abqsims.wave.AFMSimulation(...)``
-    ``abqsims.hemisphere.AFMSimulation(...)``
+    abqsims.afm.AFMSimulation(...)
+    abqsims.wave.WaveSimulation(...)
+    abqsims.hemisphere.HemisphereSimulation(...)
 
 Alternative:
 
-    ``from abqsims import *``
+.. code-block:: python
+    from abqsims import *
 
-    ``afm.AFMSimulation(...)``
-    ``wave.AFMSimulation(...)``
-    ``hemisphere.AFMSimulation(...)``
+    afm.AFMSimulation(...)
+    wave.WaveSimulation(...)
+    hemisphere.HemisphereSimulation(...)
 
 Alternative (can have conflicting functions do not do for all as shown):
 
-    ``from abqsims.afm import *``
-    ``from abqsims.wave import *``
-    ``from abqsims.hemisphere import *``
+.. code-block:: python
+    from abqsims.afm import *
+    from abqsims.wave import *
+    from abqsims.hemisphere import *
     
-    ``AFMSimulation(...)``
+    AFMSimulation(...) 
+    WaveSimulation(...) 
+    HemisphereSimulation(...)
 
 Then, the simulator can simply be run by defining the required variables and running main function:
 
-        ``host, port, username, password, None, localPath, abqCommand, fileName, subData,              
+.. code-block:: python
+        host, port, username, password, None, localPath, abqCommand, fileName, subData,              
         pdb, rotation, surfaceApprox, indentorType, rIndentor, theta_degrees, tip_length,             
         indentionDepth, forceRef, contrast, binSize, clearance, meshSurface, meshBase, meshIndentor,   
-        timePeriod, timeInterval = ...``
+        timePeriod, timeInterval = ...
         
-        ``...AFMSimulation(host, port, username, password, None, localPath, abqCommand, fileName, subData,`` 
-        ``pdb, rotation, surfaceApprox, indentorType, rIndentor, theta_degrees, tip_length,``
-        ``indentionDepth, forceRef, contrast, binSize, clearance, meshSurface, meshBase, meshIndentor,``
-        ``timePeriod, timeInterval)``
+         ...AFMSimulation(host, port, username, password, None, localPath, abqCommand, fileName, subData,
+        pdb, rotation, surfaceApprox, indentorType, rIndentor, theta_degrees, tip_length,
+        indentionDepth, forceRef, contrast, binSize, clearance, meshSurface, meshBase, meshIndentor,
+        timePeriod, timeInterval)
 
 .. toctree::
    :maxdepth: 2

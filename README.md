@@ -54,16 +54,16 @@ Or by either copying the abqsims package to the same directory or to the main py
      import abqsims
 
      abqsims.afm.AFMSimulation(...)
-     abqsims.wave.AFMSimulation(...)
-     abqsims.hemisphere.AFMSimulation(...)
+     abqsims.wave.WaveSimulation(...)
+     abqsims.hemisphere.HemisphereSimulation(...)
 
 Alternative:
 
      from abqsims import *
 
      afm.AFMSimulation(...)
-     wave.AFMSimulation(...)
-     hemisphere.AFMSimulation(...)
+     wave.WaveSimulation(...)
+     hemisphere.HemisphereSimulation(...)
 
 Alternative (can have conflicting functions do not do for all as shown):
 
@@ -71,7 +71,9 @@ Alternative (can have conflicting functions do not do for all as shown):
      from abqsims.wave import *
      from abqsims.hemisphere import *
      
-     AFMSimulation(...)
+     AFMSimulation(...) 
+     WaveSimulation(...) 
+     HemisphereSimulation(...)
 
 Then, the simulator can simply be run by defining the required variables and running main function:
 
