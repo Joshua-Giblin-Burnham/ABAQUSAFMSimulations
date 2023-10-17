@@ -24,12 +24,14 @@ Importing Python files:
 Within a seperate python script the simulator code can be imported by either appending the package using system command and path to directory holding the files:
 
 .. code-block:: python
+
     import sys
     sys.path.insert(1, 'C:\\path\\to\\directory\\abqsims') 
     
 Or by either copying the abqsims package to the same directory or to the main python path (for jupyter notebook/spyder this will be main anaconda directory). Packages can be imported in various ways importing as:
 
 .. code-block:: python
+
     import abqsims
 
     abqsims.afm.AFMSimulation(...)
@@ -39,6 +41,7 @@ Or by either copying the abqsims package to the same directory or to the main py
 Alternative:
 
 .. code-block:: python
+
     from abqsims import *
 
     afm.AFMSimulation(...)
@@ -48,6 +51,7 @@ Alternative:
 Alternative (can have conflicting functions do not do for all as shown):
 
 .. code-block:: python
+
     from abqsims.afm import *
     from abqsims.wave import *
     from abqsims.hemisphere import *
@@ -59,6 +63,7 @@ Alternative (can have conflicting functions do not do for all as shown):
 Then, the simulator can simply be run by defining the required variables and running main function:
 
 .. code-block:: python
+
         host, port, username, password, None, localPath, abqCommand, fileName, subData,              
         pdb, rotation, surfaceApprox, indentorType, rIndentor, theta_degrees, tip_length,             
         indentionDepth, forceRef, contrast, binSize, clearance, meshSurface, meshBase, meshIndentor,   
@@ -71,24 +76,24 @@ Then, the simulator can simply be run by defining the required variables and run
 
 .. toctree::
    :maxdepth: 2
-   :caption: Axisymmetric Simulation of Indentation of Elastic Sphere
+   :caption: Axisymmetric Simulation
 
    Axisymmetric-Simulation/Axisymmetric_sphere
 
 .. toctree::
-   :caption: Three Dimensional Simulation of Compression along scanline of a Hemisphere
+   :caption: Hemisphere Simulation
    :glob:
 
    Hemisphere-Simulation/index
 
 .. toctree::
-   :caption: Three Dimensional Simulation of Compression along scanline of a Periodic Structure 
+   :caption: Periodic Wave Simulation
    :glob:
 
    Wave-Simulation/index
   
 .. toctree::
-   :caption: AFM Image Simulator
+   :caption: AFM Image Simulation
    :glob:
 
    AFM-Simulation/index
