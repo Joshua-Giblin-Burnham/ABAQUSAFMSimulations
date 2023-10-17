@@ -16,6 +16,18 @@ The shape of a blunt AFM tip is a simplified construct similar to the SEM image 
 
 .. toctree::
    :maxdepth: 2
+   :caption:  Running Simulator
+
+      misc/Running-simulator
+
+.. toctree::
+   :maxdepth: 2
+   :caption:  Common errors
+
+      misc/Common-errors
+      
+.. toctree::
+   :maxdepth: 2
    :caption: Axisymmetric Simulation of Indentation of Elastic Sphere
 
    misc/Axisymmetric-sphere
@@ -37,19 +49,6 @@ The shape of a blunt AFM tip is a simplified construct similar to the SEM image 
    :glob:
 
    AFM-Simulation/index
- 
-
-.. toctree::
-   :maxdepth: 2
-   :caption:  Running Simulator
-
-      misc/Running-simulator
-
-.. toctree::
-   :maxdepth: 2
-   :caption:  Common errors:
-
-      misc/Common-errors
 
 
 Indices and tables
