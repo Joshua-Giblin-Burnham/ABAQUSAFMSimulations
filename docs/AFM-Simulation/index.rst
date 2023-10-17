@@ -1,3 +1,4 @@
+============================
 abqsims.afm
 ============================
 
@@ -9,9 +10,8 @@ Scan positions are determined by subdividing the XY domain and calculating corre
 
 Extracting simulated vertical forces and displacements produces a four-dimensional array of indenter positions and forces. Subsequently, contours are computed using a reference force, generating the final AFM images. Contours are calculated from force-indentation data via list comprehension, extracting the depth at which the indentation force exceeds a given reference force. Linear or power normalisation is applied depending on detail contrast, and images are interpolated using bi-cubic interpolation to increase pixel density.
 
-
 ----------------------------
-Functions
+Documentation
 ----------------------------
 
 .. toctree::
