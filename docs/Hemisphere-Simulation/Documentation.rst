@@ -1,8 +1,7 @@
 Documentation
 ============================
 
-Simulation Code Functions
-============================
+Simulation Code Function
 # Functionalised code to automate scan and geometry calculations, remote server access, remote script submission, data anlaysis and postprocessing required to produce AFM image.
 
 Pre-Processing Function
