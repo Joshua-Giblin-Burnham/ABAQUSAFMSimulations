@@ -1,4 +1,3 @@
-
 abqsims.hemisphere.TipStructure
 -------------------------------
 .. code-block:: python 
