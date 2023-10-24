@@ -13,30 +13,6 @@ Extracting simulated vertical forces and displacements produces a four-dimension
 Submodules
 ----------
 
-abqsims.afm.AFMODBAnalysis module
----------------------------------
-
-.. automodule:: abqsims.afm.AFMODBAnalysis
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-abqsims.afm.AFMRasterScan module
---------------------------------
-
-.. automodule:: abqsims.afm.AFMRasterScan
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-abqsims.afm.AFMSurfaceModel module
-----------------------------------
-
-.. automodule:: abqsims.afm.AFMSurfaceModel
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 abqsims.afm.AFM\_Simulation module
 ----------------------------------
 

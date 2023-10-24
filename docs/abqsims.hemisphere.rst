@@ -9,22 +9,6 @@ abqsims.hemisphere is the python based interface to produce hemisphere simulatio
 Submodules
 ----------
 
-abqsims.hemisphere.AFMtestODBAnalysis module
---------------------------------------------
-
-.. automodule:: abqsims.hemisphere.AFMtestODBAnalysis
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-abqsims.hemisphere.AFMtestRasterScan module
--------------------------------------------
-
-.. automodule:: abqsims.hemisphere.AFMtestRasterScan
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 abqsims.hemisphere.Hemi\_Simulation module
 ------------------------------------------
 

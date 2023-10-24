@@ -8,22 +8,6 @@ AFM resolution is commonly indicated by reference to structures that are at leas
 Submodules
 ----------
 
-abqsims.wave.AFMtestODBAnalysis module
---------------------------------------
-
-.. automodule:: abqsims.wave.AFMtestODBAnalysis
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-abqsims.wave.AFMtestRasterScan module
--------------------------------------
-
-.. automodule:: abqsims.wave.AFMtestRasterScan
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 abqsims.wave.Wave\_Simulation module
 ------------------------------------
 
