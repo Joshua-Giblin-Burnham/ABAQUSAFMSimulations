@@ -6,6 +6,8 @@
 ABQSIMS Package
 ===================================
 
+Authors: J. Giblin-Burnham 
+
 Repository for Masters project code simulating AFM imaging using ABAQUS/FEM and various FEM simulations. There are four different simulations.
 
 Simulations implement ABAQUS (2017) software for quasi-static, implicit computations using user subroutines UMAT. Samples are modelled as continuous, homogeneous and isotropic elastic materials with Young's modulus and Poisson ratio comparable to biomolecules. To eliminate the hourglass effect, R3D10 tetrahedral elements are employed.  Simulations impliment "surface to surface contact" interaction with "hard", nonadhesive normal contact and "rough" (Coulomb friction), non-slip tangential contact. Boundary conditions fix the base of the structures, and vertical force and indentation data are mapped and sampled via reference points at the indenter's centre.
@@ -24,43 +26,19 @@ The shape of a blunt AFM tip is a simplified construct similar to the SEM image 
 
 .. toctree::
    :maxdepth: 4
-   :caption: Axisymmetric Simulation
+   :caption: Models
 
-   Axisymmetric-Simulation/Axisymmetric_sphere
+   Models/Axisymmetric_sphere
+   Models/Hemisphere_Simulation
+   Models/Wave_Simulation
+   Models/AFM_Simulation
 
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 5
    :caption: Documentation
 
-   abqsims
-
-.. .. toctree:
-..    :caption: Hemisphere Simulation
-..    :glob:
-
-..    Hemisphere-Simulation/index
-
-.. .. toctree:
-..    :caption: Periodic Wave Simulation
-..    :glob:
-
-..    Wave-Simulation/index
-  
-.. .. toctree:
-..    :caption: AFM Image Simulation
-..    :glob:
-
-..    AFM-Simulation/index
-
-
-Common Errors
-===================================
- * ABAQUS scripts/ package files not located in working directory or system path
- * Some modules may require Python 3.9 or newer. 
- * You must be careful to change path syntaax if using mac or linux.
- * Require the following modules: py3Dmol, nglview, biopython, mendeleev, pyabaqus==2022, paramiko
-
+   Documentation/abqsims
 
 
 Indices and tables

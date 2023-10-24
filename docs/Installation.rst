@@ -57,3 +57,11 @@ Then, the simulator can simply be run by defining the required variables and run
         pdb, rotation, surfaceApprox, indentorType, rIndentor, theta_degrees, tip_length,
         indentionDepth, forceRef, contrast, binSize, clearance, meshSurface, meshBase, meshIndentor,
         timePeriod, timeInterval)
+
+
+Common Errors
+===================================
+ * ABAQUS scripts/ package files not located in working directory or system path
+ * Some modules may require Python 3.9 or newer. 
+ * You must be careful to change path syntaax if using mac or linux.
+ * Require the following modules: py3Dmol, nglview, biopython, mendeleev, pyabaqus==2022, paramiko (view requirements.txt)
