@@ -1212,7 +1212,8 @@ def ContourPlot(X, Y, Z, ErrorMask, baseDims, binSize, forceRef, contrast, pdb, 
     # ------------------------------------Add noise and padding to image if in kwargs--------------------------------   
     # Current data shape
     xNum,  yNum  = int(baseDims[0]/binSize)+1,  int(baseDims[1]/binSize)+1
-    
+    Zmask = ErrorMask.reshape(yNum, xNum)
+
     if 'ImagePadding' in kwargs.keys():
         imagePadding = kwargs['ImagePadding']
         
@@ -1225,9 +1226,14 @@ def ContourPlot(X, Y, Z, ErrorMask, baseDims, binSize, forceRef, contrast, pdb, 
         
         if imagePadding >= 1:            
             Z = np.pad(Z, pad_width= ( (round(yDiff-0.25), round(yDiff+0.25)), (round(xDiff-0.25), round(xDiff+0.25)) ), mode='constant')
+            Zmask = np.pad(Zmask, pad_width= ( (round(yDiff-0.25), round(yDiff+0.25)), (round(xDiff-0.25), round(xDiff+0.25)) ), mode='constant')
+        
         else:
             Z = np.delete(Z, np.arange(-round(yDiff-0.25), round(yDiff+0.25)), axis = 0)
+            Zmask = np.delete(Zmask, np.arange(-round(yDiff-0.25), round(yDiff+0.25)), axis = 0)
+            
             Z = np.delete(Z, np.arange(-round(xDiff-0.25), round(xDiff+0.25)), axis = 1)
+            Zmask = np.delete(Zmask, np.arange(-round(xDiff-0.25), round(xDiff+0.25)), axis = 1)
             
         imageDims = padDims
         
@@ -1242,9 +1248,9 @@ def ContourPlot(X, Y, Z, ErrorMask, baseDims, binSize, forceRef, contrast, pdb, 
         None      
         
     # Reshape image mask and apply to data
-    X = np.ma.masked_array(X, mask = ErrorMask.reshape(yNum, xNum) )
-    Y = np.ma.masked_array(Y, mask = ErrorMask.reshape(yNum, xNum) )
-    Z = np.ma.masked_array(Z, mask = ErrorMask.reshape(yNum, xNum) )
+    X = np.ma.masked_array(X, mask = Zmask )
+    Y = np.ma.masked_array(Y, mask = Zmask )
+    Z = np.ma.masked_array(Z, mask = Zmask )
     
     #  -------------------------------------------------3D Plots-----------------------------------------------------      
     # Plot 3D Contour Plot
