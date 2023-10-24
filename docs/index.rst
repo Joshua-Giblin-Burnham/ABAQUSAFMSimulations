@@ -35,7 +35,7 @@ The shape of a blunt AFM tip is a simplified construct similar to the SEM image 
 
 
 .. toctree::
-   :maxdepth: 5
+   :maxdepth: 6
    :caption: Documentation
 
    Documentation/abqsims
