@@ -80,23 +80,29 @@ Then, the simulator can simply be run by defining the required variables and run
 
    Axisymmetric-Simulation/Axisymmetric_sphere
 
-.. toctree::
-   :caption: Hemisphere Simulation
-   :glob:
-
-   Hemisphere-Simulation/index
 
 .. toctree::
-   :caption: Periodic Wave Simulation
-   :glob:
+   :maxdepth: 4
 
-   Wave-Simulation/index
+   abqsims
+
+.. .. toctree:
+..    :caption: Hemisphere Simulation
+..    :glob:
+
+..    Hemisphere-Simulation/index
+
+.. .. toctree:
+..    :caption: Periodic Wave Simulation
+..    :glob:
+
+..    Wave-Simulation/index
   
-.. toctree::
-   :caption: AFM Image Simulation
-   :glob:
+.. .. toctree:
+..    :caption: AFM Image Simulation
+..    :glob:
 
-   AFM-Simulation/index
+..    AFM-Simulation/index
 
 
 Common Errors
