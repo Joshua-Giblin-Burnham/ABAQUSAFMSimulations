@@ -39,7 +39,8 @@ extensions = ['sphinx_rtd_theme',
               'sphinx.ext.viewcode',
               'sphinx.ext.autosummary', 
               'sphinx.ext.coverage',
-              'sphinx.ext.napoleon',]
+              'sphinx.ext.napoleon',
+              'sphinxcontrib.napoleon',]
 
 autosummary_generate = True
 napoleon_google_docstring = True
