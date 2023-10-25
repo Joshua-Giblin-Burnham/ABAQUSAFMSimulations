@@ -29,7 +29,7 @@ setup(
     url='https://abaqus-afm-simulations.readthedocs.io/en/latest/index.html',
 
     # Packages to include
-    packages=find_packages(),
+    packages=find_packages(include=('abqsims', 'abqsims.*')),
 
     # List of dependencies
     install_requires = ["numpy", "matplotlib", "scipy", "absl-py","biopython","keras","mendeleev",
