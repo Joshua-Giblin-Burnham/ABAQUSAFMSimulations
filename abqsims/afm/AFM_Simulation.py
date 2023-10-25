@@ -224,7 +224,7 @@ def Rotate(domain, rotation):
                             * ytheta(float), angle in degrees for rotation around y axis (Pitch)
                             * ztheta(float), angle in degrees for rotation around z axis (Yaw)
     Returns:
-            rotate_domain(arr) : Rotated coordinate array
+        rotate_domain(arr) : Rotated coordinate array
     '''
     xtheta, ytheta, ztheta = (np.pi/180)*np.array(rotation)
     
