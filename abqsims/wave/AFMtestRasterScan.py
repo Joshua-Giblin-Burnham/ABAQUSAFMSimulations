@@ -22,7 +22,7 @@ executeOnCaeStartup()
 
 # ------------------------------------------------Set variables-------------------------------------------------------
 with open('indentorType.txt', 'r') as f:
-    indenterType = f.read()
+    indentorType = f.read()
 
 variables = np.loadtxt('variables.csv', delimiter=",")
 elasticProperties =  np.loadtxt('elasticProperties.csv', delimiter=",")
@@ -53,7 +53,7 @@ model.sketches['surface'].Line(point1 = tuple(wavePos[-1]-np.array([0, 2*waveAmp
 model.Part(dimensionality=THREE_D, name='surface', type= DEFORMABLE_BODY)
 model.parts['surface'].BaseSolidExtrude(depth=waveWidth, sketch=model.sketches['surface'])
 
-if indenterType == 'Capped':
+if indentorType == 'Capped':
     # Create Capped-Conical Indentor
     sketch = model.ConstrainedSketch(name = 'indentor', sheetSize=1.0)   
     model.sketches['indentor'].ConstructionLine(point1=(0,-rIndentor),point2=(0,z_top))
@@ -86,7 +86,7 @@ model.parts['surface'].Set(faces= model.parts['surface'].faces.getSequenceFromMa
                            name='surface_base')
 
 
-if indenterType == 'Capped':
+if indentorType == 'Capped':
     # Spherically Capped
     model.parts['indentor'].Set(faces= model.parts['indentor'].faces.getSequenceFromMask(mask=('[#7]', ), ),
                                 name='indentor_faces')
@@ -99,7 +99,7 @@ else:
 model.parts['surface'].Surface(name='surface_surface', 
                                side1Faces = model.parts['surface'].faces.getSequenceFromMask(mask=('[#1]', ), ) )
 
-if indenterType == 'Capped':
+if indentorType == 'Capped':
     # Spherically Capped
     model.parts['indentor'].Surface(name='indentor_surface', 
                                     side1Faces = model.parts['indentor'].faces.getSequenceFromMask(mask=('[#7]', ), ))
