@@ -25,7 +25,7 @@ executeOnCaeStartup()
 # ------------------------------------------------Set variables-------------------------------------------------------
 # Import predefined variables from files set in current directory
 variables = np.loadtxt('variables.csv', delimiter=",")
-
+elasticProperties =  np.loadtxt('elasticProperties.csv', delimiter=",")
 baseDims  = np.loadtxt('baseDims.csv', delimiter=",")
 tipDims   = np.loadtxt('tipDims.csv', delimiter=",")
 
@@ -124,7 +124,7 @@ model.rootAssembly.regenerate()
 
 # -----------------------------------------------Set Properties-------------------------------------------------------
 # Assign materials, using elastic and visoelastic properties
-elastic = ((1000, 0.3), )
+elastic = (tuple(elasticProperties), )
 viscoelastic = ((0.0403,0,0.649),(0.0458,0,1.695),)
 
 # Assign molecule surface material

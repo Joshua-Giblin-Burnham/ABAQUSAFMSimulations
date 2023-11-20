@@ -524,19 +524,23 @@ def DotPlot(atom_coord, atom_radius, atom_element, scanPos, clipped_scanPos, pdb
 
 # In[18]:
 
-def ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scanPos, variables, baseDims, tipDims, indentorType):
-    '''Export simulation variables as csv and txt files to load in abaqus python scripts.
+def ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scanPos, variables, baseDims, tipDims, indentorType, elasticProperties ):
+    ''' 
+    Export simulation variables as csv and txt files to load in abaqus python scripts.
     
-    Args:
-        atom_coord (arr)      : Array of coordinates [x,y,z] for atoms in biomolecule 
-        atom_element (arr)    : Array of elements names(str) for atoms in biomolecule 
-        atom_radius (dict)    : Dictionary containing van der waals radii each the element in the biomolecule 
-        clipped_scanPos (arr) : Array of clipped (containing only positions where tip and molecule interact) scan positions and initial heights [x,y,z] to image biomolecule            
-        scanPos (arr)         : Array of coordinates [x,y,z] of scan positions to image biomolecule and initial heights/ hard sphere boundary
-        variables (list)      : List of simulation variables: [timePeriod, timeInterval, binSize, meshSurface, meshBase, meshIndentor, indentionDepth, surfaceHeight]
-        baseDims (arr)        : Geometric parameters for defining base/ substrate structure [width, height, depth] 
-        tipDims (list)        : Geometric parameters for defining capped tip structure     
-        indentorType (str)    : String defining indentor type (Spherical or Capped)
+        Parameters:
+            atom_coord (arr)       - Array of coordinates [x,y,z] for atoms in biomolecule 
+            atom_element (arr)     - Array of elements names(str) for atoms in biomolecule 
+            atom_radius (dict)     - Dictionary containing van der waals radii each the element in the biomolecule 
+            clipped_scanPos (arr)  - Array of clipped (containing only positions where tip and molecule interact) scan positions and 
+                                     initial heights [x,y,z] to image biomolecule            
+            scanPos (arr)          - Array of coordinates [x,y,z] of scan positions to image biomolecule and initial heights/ hard sphere boundary
+            variables (list)       - List of simulation variables: [timePeriod, timeInterval, binSize, meshSurface, meshBase, meshIndentor, 
+                                     indentionDepth, surfaceHeight]
+            baseDims (arr)         - Geometric parameters for defining base/ substrate structure [width, height, depth] 
+            tipDims (list)         - Geometric parameters for defining capped tip structure     
+            indentorType (str)     - String defining indentor type (Spherical or Capped)
+            elasticProperties(arr) - Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]
     '''
     
     np.savetxt("atom_coords.csv", atom_coord, delimiter=",")
@@ -552,9 +556,9 @@ def ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scan
     np.savetxt("baseDims.csv", baseDims, fmt='%s', delimiter=",")
     np.savetxt("tipDims.csv", tipDims, fmt='%s', delimiter=",")
 
+    np.savetxt("elasticProperties.csv", elasticProperties, fmt='%s', delimiter=",")
     with open('indentorType.txt', 'w', newline = '\n') as f:
         f.write(indentorType)
-
 
 # In[19]:
 
@@ -1395,62 +1399,73 @@ def HardSphereAFM(scanPos, baseDims, binSize, clearance, contrast,  pdb, **kwarg
 
 def AFMSimulation(host, port, username, password, remotePath, localPath, abqCommand, fileName, subData, 
                   pdb, rotation, surfaceApprox, indentorType, rIndentor, theta_degrees, tip_length, 
-                  indentionDepth, forceRef, contrast, binSize, clearance, meshSurface, meshBase, meshIndentor, 
+                  indentionDepth, forceRef, contrast, binSize, clearance, elasticProperties, meshSurface, meshBase, meshIndentor, 
                   timePeriod, timeInterval, **kwargs):
-    '''Final function to automate simulation. 
-    
-    User inputs all variables and all results are outputted. The user gets a optionally get a surface plot of scan positions.
+    '''
+    Final function to automate simulation. User inputs all variables and all results are outputted. The user gets a optionally get a surface plot of scan positions.
     Produces a heatmap of the AFM image, and 3D plots of the sample surface for given force threshold.
     
-    Args:
-        host (str)             : Hostname of the server to connect to
-        port (int)             : Server port to connect to 
-        username (str)         : Username to authenticate as (defaults to the current local username)        :  
-        password (str)         : Used for password authentication; is also used for private key decryption if passphrase is not given.
-        remotePath (str)       : Path to remote file/directory
-        localPath (str)        : Path to local file/directory
-        abqCommand (str)       : Abaqus command to execute and run script
-        fileName (str)         : Base File name for abaqus input files
-        subData (list)         : Data for submission to serve queue [walltime, memory, cpus]
-        pdb (str)              : PDB (or CSV) file name of desired biomolecule
-        rotation (list)        : Array of [xtheta, ytheta, ztheta] rotational angle around coordinate axis'
-        surfaceApprox (float)  : Percentage of biomolecule assumed to be not imbedded in base/ substrate. Range: 0-1 
-        indentorType (str)     : String defining indentor type (Spherical or Capped)
-        rIndentor (float)      : Radius of spherical tip portion
-        theta_degrees (float)  : Principle conical angle from z axis in degrees
-        tip_length (float)     : Total cone height
-        indentionDepth (float) : Maximum indentation depth into surface 
-        forceRef (float)       : Threshold force to evaluate indentation contours at, mimics feedback force in AFM (pN)
-        contrast (float)       : Contrast between high and low values in AFM heat map (0-1)
-        binSize(float)         : Width of bins that subdivid xy domain during raster scanning/ spacing of the positions sampled over
-        clearance(type:float)  : Clearance above molecules surface indentor is set to during scan
-        meshSurface (float)    : Value of indentor mesh given as bin size for vertices of geometry in Angstrom (x10-10 m)
-        meshBase (float)       : Value of indentor mesh given as bin size for vertices of geometry in Angstrom (x10-10 m)
-        meshIndentor (float)   : Value of indentor mesh given as bin size for vertices of geometry in Angstrom (x10-10 m) 
-        timePeriod(float)      : Total time length for ABAQUS simulation/ time step (T)
-        timeInterval(float)    : Time steps data sampled over for ABAQUS simulation/ time step (dt)
-        
-    Keywords Args:
-        Submission ('serial'/ 'paralell') : Type of submission, submit pararlell scripts or single serial script for scan locations {Default: 'serial'}
-        CustomPDB                         : Extract data from local custom pd as opposed to from PDB online
-        Preprocess (bool)                 : If false skip preprocessing step of simulation {Default: True}
-        DotPlot (bool)                    : If false skip surface plot of biomolecule and scan positions {Default: False}
-        HSPlot (bool)                     : If false skip Hard Sphere AFM plot of biomolecule {Default: False}
-        MoleculeView(bool)                : If false skip interactive sphere model of biomolecule {Default: False}
-        Transfer (bool)                   : If false skip file transfer step of simulation {Default: True}
-        Part (bool)                       : If false skip part creation step of simulation {Default: True}
-        Input (bool)                      : If false skip input file creation step of simulation {Default: True}
-        Batch (bool)                      : If false skip batch submission step of simulation {Default: True}
-        Queue (bool)                      : If false skip queue completion step of simulation {Default: True}
-        Analysis (bool)                   : If false skip odb analysis step of simulation {Default: True}
-        Retrieval (bool)                  : If false skip data file retrivial from remote serve {Default: True}
-        Postprocess (bool)                : If false skip postprocessing step to produce AFM image from data {Default: True}
-        DataPlot (bool)                   : If false skip scatter plot of simulation data {Default: True} 
-        ReturnData (bool)                 : If true returns simulation data to analysis {Default: False} 
-        Noise (list)                      : If listed adds noise to AFM images [strength, mean, standard deviation]
-        imagePadding (float)              : Black space / padding around image as percentage of dimensions of molecule extent
-        SaveImages (str)                  : If Contour images to be saved include kwarg specifying the file path to folder
+        Parameters:
+            host (str)             - Hostname of the server to connect to
+            port (int)             - Server port to connect to 
+            username (str)         - Username to authenticate as (defaults to the current local username)        -  
+            password (str)         - password (str) – Used for password authentication; is also used for private key decryption if passphrase is not given.
+            remotePath (str)       - Path to remote file/directory
+            localPath (str)        - Path to local file/directory
+            abqCommand (str)       - Abaqus command to execute and run script
+            fileName (str)         - Base File name for abaqus input files
+            subData (list)         - Data for submission to serve queue [walltime, memory, cpus]
+            pdbid (str)            - PDB (or CSV) file name of desired biomolecule
+            rotation (list)        - Array of [xtheta, ytheta, ztheta] rotational angle around coordinate axis'
+            surfaceApprox (float)  - Percentage of biomolecule assumed to be not imbedded in base/ substrate. Range: 0-1 
+            indentorType (str)     - String defining indentor type (Spherical or Capped)
+            rIndentor (float)      - Radius of spherical tip portion
+            theta_degrees (float)  - Principle conical angle from z axis in degrees
+            tip_length (float)     - Total cone height
+            indentionDepth (float) - Maximum indentation depth into surface 
+            forceRef (float)       - Threshold force to evaluate indentation contours at, mimics feedback force in AFM (pN)
+            contrast (float)       - Contrast between high and low values in AFM heat map (0-1)
+            binSize(float)         - Width of bins that subdivid xy domain during raster scanning/ spacing of the positions sampled over
+            clearance(type:float)  - Clearance above molecules surface indentor is set to during scan
+            elasticProperties(arr) - Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]
+            meshSurface (float)    - Value of indentor mesh given as bin size for vertices of geometry in Angstrom (x10-10 m)
+            meshBase (float)       - Value of indentor mesh given as bin size for vertices of geometry in Angstrom (x10-10 m)
+            meshIndentor (float)   - Value of indentor mesh given as bin size for vertices of geometry in Angstrom (x10-10 m) 
+            timePeriod(float)      - Total time length for ABAQUS simulation/ time step (T)
+            timeInterval(float)    - Time steps data sampled over for ABAQUS simulation/ time step (dt)
+            
+            kwargs:
+                Submission ('serial'/ 'paralell') - Type of submission, submit pararlell scripts or single serial script for scan locations {Default: 'serial'}
+                CustomPDB - Extract data from local custom pd as opposed to from PDB online
                 
+                Preprocess (bool)  - If false skip preprocessing step of simulation {Default: True}
+                DotPlot (bool)     - If false skip surface plot of biomolecule and scan positions {Default: False}
+                HSPlot (bool)      - If false skip Hard Sphere AFM plot of biomolecule {Default: False}
+                MoleculeView(bool) - If false skip interactive sphere model of biomolecule {Default: False}
+                
+                Transfer (bool)    - If false skip file transfer step of simulation {Default: True}
+                Part (bool)        - If false skip part creation step of simulation {Default: True}
+                Input (bool)       - If false skip input file creation step of simulation {Default: True}
+                Batch (bool)       - If false skip batch submission step of simulation {Default: True}
+                Queue (bool)       - If false skip queue completion step of simulation {Default: True}
+                Analysis (bool)    - If false skip odb analysis step of simulation {Default: True}
+                Retrieval (bool)   - If false skip data file retrivial from remote serve {Default: True}
+                
+                Postprocess (bool) - If false skip postprocessing step to produce AFM image from data {Default: True}
+                DataPlot (bool)    - If false skip scatter plot of simulation data {Default: True} 
+                ReturnData (bool)  - If true returns simulation data to analysis {Default: False} 
+                
+                Noise (list)         - If listed adds noise to AFM images [strength, mean, standard deviation]
+                imagePadding (float) - Black space / padding around image as percentage of dimensions of molecule extent
+                SaveImages (str)     - If Contour images to be saved include kwarg specifying the file path to folder       
+                
+        Returns (Optional):          
+            U2 (arr)        - Array of indentors z displacement over scan position
+            RF (arr)        - Array of reaction force on indentor reference point
+            Y (arr) - 2D array of y coordinates over grid positions 
+            Z (arr) - 2D array of z coordinates of force contour over grid positions  
+            scanPos (arr) - Array of coordinates [x,y] of scan positions to image biomolecule 
+            baseDims (arr)     - Geometric parameters for defining base/ substrate structure [width, height, depth] 
     '''
     T0 = time.time()
     
@@ -1463,16 +1478,15 @@ def AFMSimulation(host, port, username, password, remotePath, localPath, abqComm
         tipDims = TipStructure(rIndentor, theta_degrees, tip_length)
                 
         # Produce array of atoom coordinates, element, radius and dimension of base/substrate and calculate scan positions over molecule for imaging
-        atom_coord, atom_element, atom_radius, surfaceHeight, baseDims = MolecularStructure(structure, rotation, tipDims, indentorType, binSize, surfaceApprox)        
+        atom_coord, atom_element, atom_radius, surfaceHeight, baseDims = MolecularStructure(structure, rotation, tipDims, indentorType, binSize, surfaceApprox) 
         scanPos, clipped_scanPos = ScanGeometry(atom_coord, atom_radius, atom_element, indentorType, tipDims, baseDims, surfaceHeight, binSize, clearance)
     
         # Set list of simulation variables and export to current directory
         variables = [timePeriod, timeInterval, binSize, meshSurface, meshBase, meshIndentor, indentionDepth, surfaceHeight]
-        ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scanPos, variables, baseDims, tipDims, indentorType)
+        ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scanPos, variables, baseDims, tipDims, indentorType, elasticProperties)
 
-        # Set return variables as None if postprocessing not run but want to return scan positons
-        X, Y, Z, U2, RF = None, None, None, None, None
-        
+        # Set return variables as None if postprocessing not run
+        U2, RF = None, None
         t1 = time.time()
 
         # Print data
@@ -1510,10 +1524,13 @@ def AFMSimulation(host, port, username, password, remotePath, localPath, abqComm
               
 
     #  ----------------------------------------------------Remote Simulation-------------------------------------------------------  
-    if 'Submission' not in kwargs.keys() or kwargs['Submission'] != False:         
+    if 'Submission' not in kwargs.keys() or kwargs['Submission'] != False: 
+        # Set return variables as None if postprocessing not run
+        U2, RF = None, None
+        
         # SSH to remote cluster to perform ABAQUS simulation and analysis from scripts and data files 
         csvfiles = ("atom_coords.csv","atom_elements.csv","atom_radius_keys.csv", "atom_radius_values.csv", 
-                    "clipped_scanPos.csv", "scanPos.csv","variables.csv","baseDims.csv", "tipDims.csv", "indentorType.txt")
+                    "clipped_scanPos.csv", "scanPos.csv","variables.csv","baseDims.csv", "tipDims.csv", "indentorType.txt", "elasticProperties.csv")
         abqfiles = ('AFMSurfaceModel.py', 'AFMRasterScan.py', 'AFMODBAnalysis.py')
     
         RemoteSubmission(host, port, username, password, remotePath, localPath, csvfiles, abqfiles, abqCommand, fileName, subData, clipped_scanPos, **kwargs)  
@@ -1524,7 +1541,7 @@ def AFMSimulation(host, port, username, password, remotePath, localPath, abqComm
         
         # Check if all simulation files are accessible in curent directory for post-processing
         try:
-            atom_coord, atom_element, atom_radius, variables, baseDims, scanPos, clipped_scanPos                  = ImportVariables()
+            atom_coord, atom_element, atom_radius, variables, baseDims, scanPos, clipped_scanPos = ImportVariables()
             timePeriod, timeInterval, binSize, meshSurface, meshBase, meshIndentor, indentionDepth, surfaceHeight = variables
             clipped_U2 = np.array(np.loadtxt('U2_Results.csv', delimiter=","))
             clipped_RF = np.array(np.loadtxt('RF_Results.csv', delimiter=","))
@@ -1542,7 +1559,7 @@ def AFMSimulation(host, port, username, password, remotePath, localPath, abqComm
           
         #  ------------------------------------------------AFM Force Contour-------------------------------------------------------  
         # Return force contours and plot in AFM image
-        X,Y,Z = ForceContours(U2, RF, forceRef, scanPos, baseDims, binSize)
+        X,Y,Z = ForceContours(U2, RF, forceRef, scanPos, baseDims, binSize, clearance)
         ContourPlot(X, Y, Z, ErrorMask, baseDims, binSize, forceRef, contrast, pdb, **kwargs)
 
         if 'HSPlot' in kwargs.keys() and kwargs['HSPlot'] == True:
@@ -1552,7 +1569,7 @@ def AFMSimulation(host, port, username, password, remotePath, localPath, abqComm
     T1 = time.time()
     print('Simulation Complete - ' + str(timedelta(seconds=T1-T0)) )
     
-    if 'returnData' in kwargs.keys() and kwargs['returnData'] == True:
-        return U2, RF, X, Y, Z, scanPos, baseDims 
+    if 'ReturnData' in kwargs.keys() and kwargs['ReturnData'] == True:
+        return U2, RF, scanPos, baseDims, variables 
     else:
         None
