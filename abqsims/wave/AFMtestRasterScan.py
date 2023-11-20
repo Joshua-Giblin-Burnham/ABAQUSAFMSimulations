@@ -21,7 +21,7 @@ import regionToolset
 executeOnCaeStartup()
 
 # ------------------------------------------------Set variables-------------------------------------------------------
-with open('indenterType.txt', 'r') as f:
+with open('indentorType.txt', 'r') as f:
     indenterType = f.read()
 
 variables = np.loadtxt('variables.csv', delimiter=",")
