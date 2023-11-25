@@ -20,6 +20,9 @@ import sys
 sys.path.insert(0, os.path.abspath('../..'))
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('../abqsims/'))
+sys.path.insert(0, os.path.abspath('../abqsims/afm/'))
+sys.path.insert(0, os.path.abspath('../abqsims/wave/'))
+sys.path.insert(0, os.path.abspath('../abqsims/hemisphere/'))
 
 # -- Project information -----------------------------------------------------
 project = 'abqsims'
@@ -38,12 +41,13 @@ extensions = ['sphinx_rtd_theme',
               'sphinx.ext.autodoc',
               'sphinx.ext.viewcode',
               'sphinx.ext.autosummary', 
+              'sphinx_autopackagesummary',
               'sphinx.ext.coverage',
               'sphinx.ext.napoleon',
-              'sphinxcontrib.napoleon',]
+              ]
 
 autosummary_generate = True
-# napoleon_google_docstring = True
+napoleon_google_docstring = True
 # napoleon_use_param = False
 # napoleon_use_ivar = True
 
