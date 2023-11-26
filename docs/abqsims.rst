@@ -1,8 +1,8 @@
 abqsims package
 ===============
 
-Subpackages
------------
+.. Subpackages
+.. -----------
 
 .. toctree::
    :maxdepth: 4
@@ -11,10 +11,10 @@ Subpackages
    abqsims.hemisphere
    abqsims.wave
 
-Module contents
----------------
+.. Module contents
+.. ---------------
 
-.. automodule:: abqsims
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. .. automodule:: abqsims
+..    :members:
+..    :undoc-members:
+..    :show-inheritance:
