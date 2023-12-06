@@ -10,8 +10,8 @@ __pycache__/
 *.so
 
 # Data outputs
-.csv
-.sh
+*.csv
+*.sh
 
 # Distribution / packaging
 .Python
@@ -81,7 +81,7 @@ docs/_build/
 target/
 
 # Jupyter Notebook
-.ipynb_checkpoints
+*.ipynb_checkpoints
 
 # IPython
 profile_default/
