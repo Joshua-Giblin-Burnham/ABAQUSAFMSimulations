@@ -89,14 +89,14 @@ def PDB(pdbid, localPath, **kwargs):
     
     if 'CustomPDB' in kwargs.keys() and kwargs['CustomPDB'] == True:
         # Retrieving file from the location it is saved in. Set `the_slashes` as '/' for MAC and Google Colab or '//' for Windows
-        file_loc = localPath + '\\' + pdbid + '.pdb'
+        file_loc = localPath + os.sep + pdbid + '.pdb'
         
         # Defining structure i.e. '4 letter PDB ID code' and 'location'
         structure = pdb_parser.get_structure(pdbid, file_loc) 
         
     else:
         # Retrieving file from the location it is saved in. Set `the_slashes` as '/' for MAC and Google Colab or '//' for Windows
-        file_loc = localPath + '\\' + structure_file_folder + '\\' + pdbid + '.cif'
+        file_loc = localPath + os.sep + structure_file_folder + os.sep + pdbid + '.cif'
         
         # Defining structure i.e. '4 letter PDB ID code' and 'location'
         structure = parser.get_structure(pdbid, file_loc) 
@@ -497,7 +497,7 @@ def DotPlot(atom_coord, atom_radius, atom_element, scanPos, clipped_scanPos, pdb
 
     # Optionally save image
     if 'SaveImages' in kwargs.keys():
-        fig1.savefig(kwargs['SaveImages'] + '\\AFMSimulationScanPos-'+pdb+'1.png', bbox_inches = 'tight', pad_inches=0.5) # change to backslash for mac/google colab
+        fig1.savefig(kwargs['SaveImages'] + os.sep + 'AFMSimulationScanPos-'+pdb+'1.png', bbox_inches = 'tight', pad_inches=0.5) # change to backslash for mac/google colab
     
     plt.show()
 
@@ -512,7 +512,7 @@ def DotPlot(atom_coord, atom_radius, atom_element, scanPos, clipped_scanPos, pdb
     ax2.view_init(90, 0)
     # Optionally save image
     if 'SaveImages' in kwargs.keys():
-        fig2.savefig(kwargs['SaveImages'] + '\\AFMSimulationScanPos-'+pdb+'2.png', bbox_inches = 'tight', pad_inches=0.5) # change to backslash for mac/google colab
+        fig2.savefig(kwargs['SaveImages'] + os.sep + 'AFMSimulationScanPos-'+pdb+'2.png', bbox_inches = 'tight', pad_inches=0.5) # change to backslash for mac/google colab
     plt.show()
 
 # In[16]:
@@ -826,7 +826,7 @@ def RemoteFTPFiles(host, port, username, password, files, remotePath, localPath)
 
     # FTPCLient takes a paramiko transport as an argument- copy content from remote directory
     ftp_client=ssh_client.open_sftp()
-    ftp_client.get(remotePath+'/'+files, localPath +'\\'+ files)  
+    ftp_client.get(remotePath+'/'+files, localPath + os.sep + files)  
     ftp_client.close()
 
 
@@ -1286,7 +1286,7 @@ def ContourPlot(X, Y, Z, ErrorMask, baseDims, binSize, forceRef, contrast, pdb, 
     
     # Optionally save image
     if 'SaveImages' in kwargs.keys():
-        fig.savefig(kwargs['SaveImages'] + '\\AFMSimulationMolecule-'+pdb+'.png', bbox_inches = 'tight') # change to backslash for mac/google colab
+        fig.savefig(kwargs['SaveImages'] + os.sep + 'AFMSimulationMolecule-'+pdb+'.png', bbox_inches = 'tight') # change to backslash for mac/google colab
     
     plt.show()
 
@@ -1384,7 +1384,7 @@ def HardSphereAFM(scanPos, baseDims, binSize, clearance, contrast,  pdb, **kwarg
     
     # Optionally save image
     if 'SaveImages' in kwargs.keys():
-        fig.savefig(kwargs['SaveImages'] + '\\AFMSimulationMolecule-'+pdb+'.png', bbox_inches = 'tight') # change to backslash for mac/google colab
+        fig.savefig(kwargs['SaveImages'] + os.sep + 'AFMSimulationMolecule-'+pdb+'.png', bbox_inches = 'tight') # change to backslash for mac/google colab
         
     plt.show()
 

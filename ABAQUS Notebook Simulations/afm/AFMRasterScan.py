@@ -41,8 +41,7 @@ with open('indentorType.txt', 'r') as f:
 modelName =  'AFMRasterScan'
 
 # Open surface model with parts and rename to simulation model
-# Linux nomeclature - for Windows use '\\AFMSurfaceModel.cae' 
-mdb.openAuxMdb( pathName = os.getcwd() +'/AFMSurfaceModel.cae')
+mdb.openAuxMdb( pathName = os.getcwd() + os.sep +'AFMSurfaceModel.cae')
 mdb.copyAuxMdbModel(fromName='AFMSurfaceModel', toName = modelName)
 mdb.closeAuxMdb()
 

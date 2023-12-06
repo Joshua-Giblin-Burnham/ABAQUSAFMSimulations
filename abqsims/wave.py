@@ -509,7 +509,7 @@ def RemoteFTPFiles(host, port, username, password, files, remotePath, localPath)
 
     # FTPCLient takes a paramiko transport as an argument- copy content from remote directory
     ftp_client=ssh_client.open_sftp()
-    ftp_client.get(remotePath+'/'+files, localPath +'\\'+ files)  
+    ftp_client.get(remotePath+'/'+files, localPath +os.sep+ files)  
     ftp_client.close()
 
 # %% [markdown]

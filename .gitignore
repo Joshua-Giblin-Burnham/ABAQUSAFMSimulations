@@ -10,10 +10,13 @@ __pycache__/
 *.so
 
 # Data outputs
+*.txt
 *.csv
 *.sh
 
 # Distribution / packaging
+obsolete/
+ssh/
 .Python
 build/
 develop-eggs/
