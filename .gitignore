@@ -13,9 +13,12 @@ __pycache__/
 *.txt
 *.csv
 *.sh
+*.cif
+*.pdb
 
 # Distribution / packaging
 obsolete/
+data/
 ssh/
 .Python
 build/
