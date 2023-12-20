@@ -8,19 +8,34 @@
 # In[1]:
 # --------------------------------------------------System Imports-----------------------------------------------------
 import os
+import sys
 import time
+import subprocess
 from datetime import timedelta
-
-# -----------------------------------------------Server commands--------------------------------------------------------
+from platform import python_version
+import socket
 import paramiko
+from scp import SCPClient
 
-# --------------------------------------------------Mathematical Imports------------------------------------------------
+# ---------------------------------------------Mathematical/Plotting Imports--------------------------------------------
 # Importing relevant maths and graphing modules
-import numpy as np    
+import numpy as np 
+import math
+from numpy import random   
+from random import randrange
+
+# Interpolation/ Fittting modules
+from scipy.interpolate import UnivariateSpline
+from scipy.optimize import curve_fit
+
+# Plotting import and settinngs
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.mplot3d import axes3d
+from matplotlib.ticker import MaxNLocator
 
 linewidth = 5.92765763889 # inch
-
 plt.rcParams["figure.figsize"] = (1.61*linewidth, linewidth)
 plt.rcParams['figure.dpi'] = 256
 plt.rcParams['font.size'] = 16
@@ -31,15 +46,19 @@ plt.rcParams['mathtext.rm'] = 'Times New Roman'
 plt.rcParams['mathtext.it'] = 'Times New Roman:italic'
 plt.rcParams['mathtext.bf'] = 'Times New Roman:bold'
 
+# For displaying images in Markdown
+from IPython.display import Image 
+from IPython import get_ipython
 
 # -----------------------------------------------Specific Imports-------------------------------------------------------
 # PDB stuff:From video: youtube.com/watch?v=mL8NPpRxgJA&ab_channel=CarlosG.Oliver
 from Bio.PDB import *
 from Bio.PDB.PDBParser import PDBParser
+from Bio.PDB import Entity
 
 # Atomic properties amd molecule visualistion
-from mendeleev import element
 from mendeleev.fetch import fetch_table
+from mendeleev import element
 import nglview as nv
 import py3Dmol
 
@@ -591,30 +610,78 @@ def ImportVariables():
 # #### Remote Functions
 # Functions for working on remote serve, including transfering files, submitting bash commands, submiting bash scripts for batch input files and check queue statis.
 
+
 # In[21]:
-# ##### File Transfer`
+# ##### Remote Server
+
+def SSHconnect(remote_server, **kwargs):
+    '''Function to open ssh connecction to remote server. 
+    
+    A new Channel is opened and allows requested command to be executed in other functions. The function allows for ProxyJumpp/Port Forwarding/SSH Tunelling.
+
+    Args:
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey]
+                                host (str)       : Hostname of the server to connect to
+                                port (int)       : Server port to connect to 
+                                username (str)   : username to authenticate as (defaults to the current local username)        
+                                password (str)   : Used for password authentication, None if ssh-key is used; is also used for private key decryption if passphrase is not given.
+                                sshkey (str)     : Path to private key for keyexchange if password not used, None if not used
+    Keywords Args:
+        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
+                                           
+    Return: 
+        ssh_client (obj) : SHH client object which allows for bash command execution and file transfer.
+    '''
+
+    host, port, username, password, sshkey, home, scratch = remote_server
+
+    if 'ProxyJump' in kwargs:
+        # Set variables for proxy port
+        proxy_host, proxy_port, proxy_username, proxy_password, proxy_sshkey, proxy_home, proxy_scratch = kwargs['ProxyJump']
+        hostname = socket.getfqdn()
+        remote_addr = (host, int(port))
+        local_addr  = (socket.gethostbyname_ex(hostname)[2][0], 22)
+
+        # Create proxy jump/ ssh tunnel
+        proxy_client = paramiko.SSHClient()
+        proxy_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        proxy_client.connect(proxy_host, int(proxy_port), proxy_username, proxy_password, key_filename=proxy_sshkey)
+        transport = proxy_client.get_transport()
+        channel = transport.open_channel("direct-tcpip", remote_addr, local_addr)
+
+        # SSH to clusters using paramiko module
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh_client.connect(host, port, username, password, key_filename=sshkey, sock=channel)
+    
+    else: 
+        # SSH to clusters using paramiko module
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh_client.connect(host, int(port), username, password, key_filename=sshkey)
+
+    return ssh_client
+
+# In[21]:
+# ##### File Transfer
 
 # In[22]:
 
-def RemoteSCPFiles(host, port, username, password, files, remotePath):
-    '''Function to make directory and transfer files to SSH server. 
-    
-    A new Channel is opened and the files are transfered. The command’s input and output streams are returned as Python 
-    file-like objects representing stdin, stdout, and stderr.
+def RemoteSCPFiles(remote_server, files, remotePath, **kwargs):
+    '''Function to make directory and transfer files to SSH server.
+     
+    A new Channel is opened and the files are transfered.The commands input and output streams are returned as Python file-like objects representing stdin, stdout, and stderr.
     
     Args:
-        host (str)       : Hostname of the server to connect to
-        port (int)       : Server port to connect to 
-        username (str)   : username to authenticate as (defaults to the current local username)        :  
-        password (str)   : Used for password authentication; is also used for private key decryption if passphrase is not given.
-        files (str/list) : File or list of file to transfer
-        remotePath (str) : Path to remote file/directory
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey]
+        files (str/list)     : File or list of file to transfer
+        remotePath (str)     : Path to remote file/directory
+    
+    Keywords Args:
+        ProxyJump (proxy_server)  : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
     '''
     # SHH to clusters
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh_client.connect(host, port, username, password)
-
+    ssh_client = SSHconnect(remote_server, **kwargs)
     stdin, stdout, stderr = ssh_client.exec_command('mkdir -p ' + remotePath)
 
     # SCPCLient takes a paramiko transport as an argument- Uploading content to remote directory
@@ -624,31 +691,26 @@ def RemoteSCPFiles(host, port, username, password, files, remotePath):
     
     ssh_client.close()
 
-
 # ##### Bash Command Submission
 
 # In[23]:
 
-def RemoteCommand(host, port, username, password, script, remotePath, command):
+def RemoteCommand(remote_server, script, remotePath, command, **kwargs):
     '''Function to execute a command/ script submission on the SSH server. 
     
-    A new Channel is opened and the requested command is executed. The command’s input and output streams are returned as Python 
-    file-like objects representing stdin, stdout, and stderr.
+    A new Channel is opened and the requested command is executed. The commands input and output streams are returned as Python file-like objects representing stdin, stdout, and stderr.
     
     Args:
-        host (str)       : Hostname of the server to connect to
-        port (int)       : Server port to connect to 
-        username (str)   : username to authenticate as (defaults to the current local username) 
-        password (str)   : Used for password authentication; is also used for private key decryption if passphrase is not given.
-        script (str)     : Script to run via bash command 
-        remotePath (str) : Path to remote file/directory
-        command (str)    : Abaqus command to execute and run script
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey]
+        script (str)         : Script to run via bash command 
+        remotePath (str)     : Path to remote file/directory
+        command (str)        : Abaqus command to execute and run script   
+                     
+    Keywords Args:
+        ProxyJump (proxy_server)  : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
     '''
-    # SSH to clusters using paramiko module
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh_client.connect(host, port, username, password)
     
+    ssh_client = SSHconnect(remote_server, **kwargs)
     # Execute command
     stdin, stdout, stderr = ssh_client.exec_command('cd ' + remotePath + ' \n '+ command +' '+ script +' & \n')
     lines = stdout.readlines()
@@ -663,21 +725,19 @@ def RemoteCommand(host, port, username, password, script, remotePath, command):
 
 # In[25]:
 
-def BatchSubmission(host, port, username, password, fileName, subData, scanPos, remotePath, **kwargs):
-    '''Function to create bash script for batch submission of input file, and run them on remote server.
-    
-    Args:
-        host (str)       : Hostname of the server to connect to
-        port (int)       : Server port to connect to 
-        username (str)   : username to authenticate as (defaults to the current local username)        :  
-        password (str)   : Used for password authentication; is also used for private key decryption if passphrase is not given.
-        fileName (str)   : Base File name for abaqus input files
-        subData (str)    : Data for submission to serve queue [walltime, memory, cpus]
-        scanPos (arr)    : Array of coordinates [x,y] of scan positions to image biomolecule (can be clipped or full) 
-        remotePath (str) : Path to remote file/directory
+def BatchSubmission(remote_server, fileName, subData, scanPos, remotePath, **kwargs):
+    ''' Function to create bash script for batch submission of input file, and run them on remote server.
         
+    Args:
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey]
+        fileName (str)       : Base File name for abaqus input files
+        subData (str)        : Data for submission to serve queue [walltime, memory, cpus]
+        scanPos (arr)        : Array of coordinates [x,y] of scan positions to image biomolecule (can be clipped or full) 
+        remotePath (str)     : Path to remote file/directory
+            
     Keywords Args:
-        Submission ('serial'/ 'paralell') : optional define whether single serial script or seperate paralell submission to queue {Default: 'serial'}  
+        ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall. Defines varibles for proxy server in list format [host, port, username, password, sshkey]
+        Submission ('serial'/ 'paralell') : Optional define whether single serial script or seperate paralell submission to queue {Default: 'serial'}  
     '''
     # For paralell mode create bash script to runs for single scan location, then loop used to submit individual scripts for each location which run in paralell
     if 'Submission' in kwargs and kwargs['Submission'] == 'paralell':
@@ -686,17 +746,18 @@ def BatchSubmission(host, port, username, password, fileName, subData, scanPos, 
                  '#$ -l h_rt='+ subData[0],
                  '#$ -l mem=' + subData[1],
                  '#$ -pe mpi ' + subData[2],
+                 # '#$ -l gpu=2',
                  '#$ -wd /scratch/scratch/zcapjgi/ABAQUS',
                  'module load abaqus/2017 ',
-                 'ABAQUS_PARALLELSCRATCH = "/scratch/scratch/zcapjgi/ABAQUS" ',
+                 'ABAQUS_PARALLELSCRATCH="/scratch/scratch/zcapjgi/ABAQUS" ',
                  'cd ' + remotePath,
-                 'gerun abaqus interactive cpus=$NSLOTS mp_mode=mpi job=$JOB_NAME input=$JOB_NAME.inp scratch=$ABAQUS_PARALLELSCRATCH resultsformat=odb'
+                 'abaqus interactive cpus=$NSLOTS mp_mode=mpi job=$JOB_NAME input=$JOB_NAME.inp scratch=$ABAQUS_PARALLELSCRATCH resultsformat=odb'
                 ]
         
     # Otherwise, create script to run serial analysis consecutively with single submission
     else:
         # Create set of submission comands for each scan locations
-        jobs   = ['gerun abaqus interactive cpus=$NSLOTS mp_mode=mpi job='+fileName+str(int(i))+' input='+fileName+str(int(i))+'.inp scratch=$ABAQUS_PARALLELSCRATCH resultsformat=odb' 
+        jobs   = ['abaqus interactive cpus=$NSLOTS memory="90%" mp_mode=mpi standard_parallel=all job='+fileName+str(int(i))+' input='+fileName+str(int(i))+'.inp scratch=$ABAQUS_PARALLELSCRATCH' 
                   for i in range(len(scanPos))]
         
         # Produce preamble to used to set up bash script
@@ -707,7 +768,7 @@ def BatchSubmission(host, port, username, password, fileName, subData, scanPos, 
                     '#$ -pe mpi ' + subData[2],
                     '#$ -wd /home/zcapjgi/Scratch/ABAQUS',
                     'module load abaqus/2017 ',
-                    'ABAQUS_PARALLELSCRATCH = "/home/zcapjgi/Scratch/ABAQUS" ',
+                    'ABAQUS_PARALLELSCRATCH="/home/zcapjgi/Scratch/ABAQUS" ',
                     'cd ' + remotePath ]
         # Combine to produce total  script
         lines+=jobs
@@ -719,10 +780,7 @@ def BatchSubmission(host, port, username, password, fileName, subData, scanPos, 
             f.write('\n')
 
     # SSH to clusters 
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh_client.connect(host, port, username, password)
-
+    ssh_client = SSHconnect(remote_server, **kwargs)
     stdin, stdout, stderr = ssh_client.exec_command('mkdir -p ' + remotePath)
 
     # SCPCLient takes a paramiko transport as an argument- Uploading content to remote directory
@@ -762,14 +820,14 @@ def BatchSubmission(host, port, username, password, fileName, subData, scanPos, 
 
 # In[27]:
 
-def QueueCompletion(host, port, username, password):
+def QueueCompletion(remote_server, **kwargs):
     '''Function to check queue statis and complete when queue is empty.
 
     Args:
-        host (str)       : Hostname of the server to connect to
-        port (int)       : Server port to connect to 
-        username (str)   : username to authenticate as (defaults to the current local username)          
-        password (str)   : Used for password authentication; is also used for private key decryption if passphrase is not given.
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey]
+                       
+    Keywords Args:
+        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
     '''
     # Log time
     t0 = time.time()
@@ -777,9 +835,7 @@ def QueueCompletion(host, port, username, password):
 
     while complete == False:
         # SSH to clusters 
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh_client.connect(host, port, username, password)
+        ssh_client = SSHconnect(remote_server, **kwargs)
 
         # Execute command to view the queue
         stdin, stdout, stderr = ssh_client.exec_command('qstat')
@@ -805,28 +861,26 @@ def QueueCompletion(host, port, username, password):
 
 # In[29]:
 
-def RemoteFTPFiles(host, port, username, password, files, remotePath, localPath):
-    '''Function to transfer files from directory on SSH server to local machine. 
+def RemoteFTPFiles(remote_server, files, remotePath, localPath, **kwargs):
+    '''  Function to transfer files from directory on SSH server to local machine. 
     
     A new Channel is opened and the files are transfered. The function uses FTP file transfer.
     
     Args:
-        host (str)       : Hostname of the server to connect to
-        port (int)       : Server port to connect to 
-        username (str)   : username to authenticate as (defaults to the current local username)        
-        password (str)   : Used for password authentication; is also used for private key decryption if passphrase is not given.
-        files (str )     : File to transfer
-        remotePath (str) : Path to remote file/directory
-        localPath (str)  : Path to local file/directory
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey]
+        files (str )         : File to transfer
+        remotePath (str)     : Path to remote file/directory
+        localPath (str)      : Path to local file/directory
+
+    Keywords Args:
+        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
     '''
     # SSH to cluster
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh_client.connect(host, port, username, password)
+    ssh_client = SSHconnect(remote_server, **kwargs)
 
     # FTPCLient takes a paramiko transport as an argument- copy content from remote directory
     ftp_client=ssh_client.open_sftp()
-    ftp_client.get(remotePath+'/'+files, localPath + os.sep + files)  
+    ftp_client.get(remotePath+'/'+files, localPath + os.sep + 'data'+ os.sep+ files)  
     ftp_client.close()
 
 
@@ -835,23 +889,21 @@ def RemoteFTPFiles(host, port, username, password, files, remotePath, localPath)
 
 # In[31]:
 
-def Remote_Terminal(host, port, username, password):
-    '''Function to emulate cluster terminal. 
+def Remote_Terminal(remote_server, **kwargs):
+    ''' Function to emulate cluster terminal. 
     
-    Channel is opened and commands given are executed. The command’s input and output streams are returned as 
-    Python file-like objects representing stdin, stdout, and stderr.
+    Channel is opened and commands given are executed. The command’s input and output streams are returned as Python file-like objects representing  
+    stdin, stdout, and stderr.
     
     Args:
-        host (str)       : Hostname of the server to connect to
-        port (int)       : Server port to connect to 
-        username (str)   : username to authenticate as (defaults to the current local username)          
-        password (str)   : Used for password authentication; is also used for private key decryption if passphrase is not given.
+        remote_server (list) - Contains varibles for remote server in list format [host, port, username, password, sshkey]
+                
+    Keywords Args:
+        ProxyJump (proxy_server)  : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
     '''
     
     # SHH to cluster
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh_client.connect(host, port, username, password)
+    ssh_client = SSHconnect(remote_server, **kwargs)
     
     # Create channel to keep connection open
     ssh_channel = ssh_client.get_transport().open_session()
@@ -899,18 +951,15 @@ def LocalSubmission():
 
 # In[34]:
 
-def RemoteSubmission(host, port, username, password, remotePath, localPath,  csvfiles, abqfiles, abqCommand, fileName, subData, clipped_scanPos, **kwargs):
+def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, abqCommand, fileName, subData, clipped_scanPos, **kwargs):
     '''Function to run simulation and scripts on the remote servers. 
     
-    Files for variables are transfered, ABAQUS scripts are run to create parts and input files. A bash file is created and submitted to run simulation for batch 
-    of inputs. Analysis of odb files is performed and data transfered back to local machine. Using keyword arguments invidual parts of simulation previously completed 
-    can be skipped.
+    Files for variables are transfered, ABAQUS scripts are run to create parts and input files. A bash file is created and submitted to run simulation for 
+    batch of inputs. Analysis of odb files is performed and data transfered back to local machine. Using keyword arguments invidual parts of simulation previously 
+    completed can be skipped.
     
     Args:
-        host (str)              : Hostname of the server to connect to
-        port (int)              : Server port to connect to 
-        username (str)          : Username to authenticate as (defaults to the current local username)        
-        password (str)          : Used for password authentication; is also used for private key decryption if passphrase is not given.
+        remote_server (list)    : Contains varibles for remote server in list format [host, port, username, password, sshkey]
         remotePath (str)        : Path to remote file/directory
         localPath (str)         : Path to local file/directory
         csvfiles (list)         : List of csv and txt files to transfer to remote server
@@ -918,9 +967,10 @@ def RemoteSubmission(host, port, username, password, remotePath, localPath,  csv
         abqCommand (str)        : Abaqus command to execute and run script
         fileName (str)          : Base File name for abaqus input files
         subData (str)           : Data for submission to serve queue [walltime, memory, cpus]
-        clipped_scanPos (arr)   : Array of clipped (containing only positions where tip and molecule interact) scan positions and  initial heights [x,y,z] to image biomolecule    
-    
+        clipped_scanPos (arr)   : Array of clipped (containing only positions where tip and molecule interact) scan positions and  initial heights [x,y,z] 
+                                    to image biomolecule    
     Keywords Args:
+        ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
         submission ('serial'/ 'paralell') : Type of submission, submit pararlell scripts or single serial script for scan locations {Default: 'serial'}
         Transfer (bool)                   : If false skip file transfer step of simulation {Default: True}
         Part (bool)                       : If false skip part creation step of simulation {Default: True}
@@ -934,8 +984,8 @@ def RemoteSubmission(host, port, username, password, remotePath, localPath,  csv
     if 'Transfer' not in kwargs.keys() or kwargs['Transfer'] == True:
         
         # Transfer scripts and variable files to remote server
-        RemoteSCPFiles(host, port, username, password, csvfiles, remotePath)
-        RemoteSCPFiles(host, port, username, password, abqfiles, remotePath)
+        RemoteSCPFiles(remote_server, csvfiles, remotePath, **kwargs)
+        RemoteSCPFiles(remote_server, abqfiles, remotePath, **kwargs)
         
         print('File Transfer Complete')
 
@@ -946,7 +996,7 @@ def RemoteSubmission(host, port, username, password, remotePath, localPath,  csv
         
         # Create Molecule and Tip
         script = 'AFMSurfaceModel.py'
-        RemoteCommand(host, port, username, password, script, remotePath, abqCommand)
+        RemoteCommand(remote_server, script, remotePath, abqCommand, **kwargs)
         
         t1 = time.time()
         print('Part Creation Complete - ' + str(timedelta(seconds=t1-t0)) )
@@ -957,7 +1007,7 @@ def RemoteSubmission(host, port, username, password, remotePath, localPath,  csv
         
         # Produce simulation and input files
         script = 'AFMRasterScan.py'
-        RemoteCommand(host, port, username, password, script, remotePath, abqCommand)
+        RemoteCommand(remote_server, script, remotePath, abqCommand, **kwargs)
         
         t1 = time.time()
         print('Input File Complete - ' + str(timedelta(seconds=t1-t0)) )
@@ -968,7 +1018,7 @@ def RemoteSubmission(host, port, username, password, remotePath, localPath,  csv
         print('Submitting Batch Scripts ...')
         
         # Submit bash scripts to remote queue to carry out batch abaqus analysis
-        BatchSubmission(host, port, username, password, fileName, subData, clipped_scanPos, remotePath, **kwargs) 
+        BatchSubmission(remote_server, fileName, subData, clipped_scanPos, remotePath, **kwargs) 
         
         t1 = time.time()
         print('Batch Submission Complete - '+ str(timedelta(seconds=t1-t0)) )
@@ -978,7 +1028,7 @@ def RemoteSubmission(host, port, username, password, remotePath, localPath,  csv
         print('Simulations Processing ...')
         
         # Wait for completion when queue is empty
-        QueueCompletion(host, port, username, password)
+        QueueCompletion(remote_server, **kwargs)
         
         t1 = time.time()
         print('ABAQUS Simulation Complete - '+ str(timedelta(seconds=t1-t0)) )
@@ -990,7 +1040,7 @@ def RemoteSubmission(host, port, username, password, remotePath, localPath,  csv
         
         # ODB analysis script to run, extracts data from simulation and sets it in csv file on server
         script = 'AFMODBAnalysis.py'
-        RemoteCommand(host, port, username, password, script, remotePath, abqCommand)
+        RemoteCommand(remote_server, script, remotePath, abqCommand, **kwargs)
         
         t1 = time.time()
         print('ODB Analysis Complete - ' + str(timedelta(seconds=t1-t0)) )
@@ -1004,10 +1054,10 @@ def RemoteSubmission(host, port, username, password, remotePath, localPath,  csv
         
         # Files retrievals from remote server
         for file in csvfiles:
-            RemoteFTPFiles(host, port, username, password, file, remotePath, localPath)
-        RemoteFTPFiles(host, port, username, password, dataFiles[0], remotePath, localPath)
-        RemoteFTPFiles(host, port, username, password, dataFiles[1], remotePath, localPath)
-        RemoteFTPFiles(host, port, username, password, dataFiles[2], remotePath, localPath)
+            RemoteFTPFiles(remote_server, file, remotePath, localPath, **kwargs)
+        RemoteFTPFiles(remote_server, dataFiles[0], remotePath, localPath, **kwargs)
+        RemoteFTPFiles(remote_server, dataFiles[1], remotePath, localPath, **kwargs)
+        RemoteFTPFiles(remote_server, dataFiles[2], remotePath, localPath, **kwargs)
 
             
         t1 = time.time()
@@ -1394,7 +1444,7 @@ def HardSphereAFM(scanPos, baseDims, binSize, clearance, contrast,  pdb, **kwarg
 
 # In[44]:
 
-def AFMSimulation(host, port, username, password, remotePath, localPath, abqCommand, fileName, subData, 
+def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, subData, 
                   pdb, rotation, surfaceApprox, indentorType, rIndentor, theta_degrees, tip_length, 
                   indentionDepth, forceRef, contrast, binSize, clearance, elasticProperties, meshSurface, meshBase, meshIndentor, 
                   timePeriod, timeInterval, **kwargs):
@@ -1403,10 +1453,12 @@ def AFMSimulation(host, port, username, password, remotePath, localPath, abqComm
     User inputs all variables and all results are outputted. The user gets a optionally get a surface plot of scan positions. Produces a heatmap of the AFM image, and 3D plots of the sample surface for given force threshold.
     
     Args:
-        host (str)             : Hostname of the server to connect to
-        port (int)             : Server port to connect to 
-        username (str)         : Username to authenticate as (defaults to the current local username)      
-        password (str)         : Used for password authentication; is also used for private key decryption if passphrase is not given.
+        remote_server (list)   : Contains varibles for remote server in list format [host, port, username, password, sshkey]
+                                    host (str)     : Hostname of the server to connect to
+                                    port (int)     : Server port to connect to 
+                                    username (str) : Username to authenticate as (defaults to the current local username)
+                                    password (str) : Used for password authentication, None if ssh-key is used; is also used for private key ecryption if passphrase is not given.
+                                    sshkey (str)   : Path to private key for keyexchange if password not used, None if not used
         remotePath (str)       : Path to remote file/directory
         localPath (str)        : Path to local file/directory
         abqCommand (str)       : Abaqus command to execute and run script
@@ -1432,22 +1484,23 @@ def AFMSimulation(host, port, username, password, remotePath, localPath, abqComm
         timeInterval(float)    : Time steps data sampled over for ABAQUS simulation/ time step (dt)
         
     Keywords Args:
+        ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
         Submission ('serial'/ 'paralell') : Type of submission, submit pararlell scripts or single serial script for scan locations {Default: 'serial'}
-        CustomPDB : Extract data from local custom pd as opposed to from PDB online
-        Preprocess (bool)  : If false skip preprocessing step of simulation {Default: True}
-        DotPlot (bool)     : If false skip surface plot of biomolecule and scan positions {Default: False}
-        HSPlot (bool)      : If false skip Hard Sphere AFM plot of biomolecule {Default: False}
-        MoleculeView(bool) : If false skip interactive sphere model of biomolecule {Default: False}
-        Transfer (bool)    : If false skip file transfer step of simulation {Default: True}
-        Part (bool)        : If false skip part creation step of simulation {Default: True}
-        Input (bool)       : If false skip input file creation step of simulation {Default: True}
-        Batch (bool)       : If false skip batch submission step of simulation {Default: True}
-        Queue (bool)       : If false skip queue completion step of simulation {Default: True}
-        Analysis (bool)    : If false skip odb analysis step of simulation {Default: True}
-        Retrieval (bool)   : If false skip data file retrivial from remote serve {Default: True}
-        Postprocess (bool) : If false skip postprocessing step to produce AFM image from data {Default: True}
-        DataPlot (bool)    : If false skip scatter plot of simulation data {Default: True} 
-        ReturnData (bool)  : If true returns simulation data to analysis {Default: False} 
+        CustomPDB            : Extract data from local custom pd as opposed to from PDB online
+        Preprocess (bool)    : If false skip preprocessing step of simulation {Default: True}
+        DotPlot (bool)       : If false skip surface plot of biomolecule and scan positions {Default: False}
+        HSPlot (bool)        : If false skip Hard Sphere AFM plot of biomolecule {Default: False}
+        MoleculeView(bool)   : If false skip interactive sphere model of biomolecule {Default: False}
+        Transfer (bool)      : If false skip file transfer step of simulation {Default: True}
+        Part (bool)          : If false skip part creation step of simulation {Default: True}
+        Input (bool)         : If false skip input file creation step of simulation {Default: True}
+        Batch (bool)         : If false skip batch submission step of simulation {Default: True}
+        Queue (bool)         : If false skip queue completion step of simulation {Default: True}
+        Analysis (bool)      : If false skip odb analysis step of simulation {Default: True}
+        Retrieval (bool)     : If false skip data file retrivial from remote serve {Default: True}
+        Postprocess (bool)   : If false skip postprocessing step to produce AFM image from data {Default: True}
+        DataPlot (bool)      : If false skip scatter plot of simulation data {Default: True} 
+        ReturnData (bool)    : If true returns simulation data to analysis {Default: False} 
         Noise (list)         : If listed adds noise to AFM images [strength, mean, standard deviation]
         imagePadding (float) : Black space / padding around image as percentage of dimensions of molecule extent
         SaveImages (str)     : If Contour images to be saved include kwarg specifying the file path to folder       
@@ -1455,10 +1508,10 @@ def AFMSimulation(host, port, username, password, remotePath, localPath, abqComm
     Returns:          
         U2 (arr)        : Array of indentors z displacement over scan position
         RF (arr)        : Array of reaction force on indentor reference point
-        Y (arr) : 2D array of y coordinates over grid positions 
-        Z (arr) : 2D array of z coordinates of force contour over grid positions  
-        scanPos (arr) : Array of coordinates [x,y] of scan positions to image biomolecule 
-        baseDims (arr)     : Geometric parameters for defining base/ substrate structure [width, height, depth] 
+        Y (arr)         : 2D array of y coordinates over grid positions 
+        Z (arr)         : 2D array of z coordinates of force contour over grid positions  
+        scanPos (arr)   : Array of coordinates [x,y] of scan positions to image biomolecule 
+        baseDims (arr)  : Geometric parameters for defining base/ substrate structure [width, height, depth] 
     '''
     T0 = time.time()
     
@@ -1526,8 +1579,7 @@ def AFMSimulation(host, port, username, password, remotePath, localPath, abqComm
                     "clipped_scanPos.csv", "scanPos.csv","variables.csv","baseDims.csv", "tipDims.csv", "indentorType.txt", "elasticProperties.csv")
         abqfiles = ('AFMSurfaceModel.py', 'AFMRasterScan.py', 'AFMODBAnalysis.py')
     
-        RemoteSubmission(host, port, username, password, remotePath, localPath, csvfiles, abqfiles, abqCommand, fileName, subData, clipped_scanPos, **kwargs)  
-        
+        RemoteSubmission(remote_server, remotePath, localPath, csvfiles, abqfiles, abqCommand, fileName, subData, clipped_scanPos, **kwargs)          
         
     #  -------------------------------------------------- Post-Processing--------------------------------------------------------  
     if 'Postprocess' not in kwargs.keys() or kwargs['Postprocess'] == True:
