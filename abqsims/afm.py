@@ -974,7 +974,7 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
                                     to image biomolecule    
     Keywords Args:
         ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
-        submission ('serial'/ 'paralell') : Type of submission, submit pararlell scripts or single serial script for scan locations {Default: 'serial'}
+        Submission ('serial'/ 'paralell') : Type of submission, submit pararlell scripts or single serial script for scan locations {Default: 'serial'}
         Transfer (bool)                   : If false skip file transfer step of simulation {Default: True}
         Part (bool)                       : If false skip part creation step of simulation {Default: True}
         Input (bool)                      : If false skip input file creation step of simulation {Default: True}
