@@ -607,7 +607,7 @@ def Remote_Terminal(remote_server, **kwargs):
 # Function to run simulation and scripts on the remote servers. Files for variables are transfered, ABAQUS scripts are run to create parts and input files. A bash file is created and submitted to run simulation for batch of inputs. Analysis of odb files is performed and data transfered back to local machine. Using keyword arguments invidual parts of simulation previously completed can be skipped.
 
 # %%
-def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, abqCommand, fileName, subData, rackPos, **kwargs):
+def RemoteSubmission(remote_server, remotePath,  csvfiles, abqfiles, abqCommand, fileName, subData, rackPos, **kwargs):
     '''Function to run simulation and scripts on the remote servers. 
     
     Files for variables are transfered, ABAQUS scripts are run to create parts and input files. A bash file is created and submitted to run simulation for 
@@ -616,7 +616,6 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
     Args:
         remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
         remotePath (str) : Path to remote file/directory
-        localPath (str)  : Path to local file/directory
         csvfiles (list)  : List of csv and txt files to transfer to remote server
         abqfiles (list)  : List of abaqus script files to transfer to remote server
         abqCommand (str) : Abaqus command to execute and run script
