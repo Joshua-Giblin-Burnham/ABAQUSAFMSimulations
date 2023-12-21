@@ -239,9 +239,9 @@ def Rotate(domain, rotation):
     Args:
         domain (arr)    : Array of [x,y,z] coordinates in domain to be rotated (Shape: (3) or (N,3) )
         rotation (list) : Array of [xtheta, ytheta, ztheta] rotational angle around coordinate axis:
-                            * xtheta(float), angle in degrees for rotation around x axis (Row)
-                            * ytheta(float), angle in degrees for rotation around y axis (Pitch)
-                            * ztheta(float), angle in degrees for rotation around z axis (Yaw)
+                            * **xtheta(float):** Angle in degrees for rotation around x axis (Row)
+                            * **ytheta(float):** Angle in degrees for rotation around y axis (Pitch)
+                            * **ztheta(float):** Angle in degrees for rotation around z axis (Yaw)
     Returns:
         rotate_domain(arr) : Rotated coordinate array
     '''
@@ -625,12 +625,15 @@ def SSHconnect(remote_server, **kwargs):
     A new Channel is opened and allows requested command to be executed in other functions. The function allows for ProxyJumpp/Port Forwarding/SSH Tunelling.
 
     Args:
-        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
-                                host (str)       : Hostname of the server to connect to
-                                port (int)       : Server port to connect to 
-                                username (str)   : username to authenticate as (defaults to the current local username)        
-                                password (str)   : Used for password authentication, None if ssh-key is used; is also used for private key decryption if passphrase is not given.
-                                sshkey (str)     : Path to private key for keyexchange if password not used, None if not used
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]:
+                                * **host (str):**     Hostname of the server to connect to
+                                * **port (int):**     Server port to connect to 
+                                * **username (str):** Username to authenticate as (defaults to the current local username)        
+                                * **password (str):** Used for password authentication, None if ssh-key is used; is also used for private key decryption if passphrase is not given.
+                                * **sshkey (str):**   Path to private key for keyexchange if password not used, None if not used
+                                * **home (str):**     Path to home directory on remote server
+                                * **scratch (str):**  Path to scratch directory on remote server
+
     Keywords Args:
         ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
                                            
@@ -1453,12 +1456,14 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
     User inputs all variables and all results are outputted. The user gets a optionally get a surface plot of scan positions. Produces a heatmap of the AFM image, and 3D plots of the sample surface for given force threshold.
     
     Args:
-        remote_server (list)   : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
-                                    host (str)     : Hostname of the server to connect to
-                                    port (int)     : Server port to connect to 
-                                    username (str) : Username to authenticate as (defaults to the current local username)
-                                    password (str) : Used for password authentication, None if ssh-key is used; is also used for private key ecryption if passphrase is not given.
-                                    sshkey (str)   : Path to private key for keyexchange if password not used, None if not used
+        remote_server (list)   : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]:
+                                * **host (str):**     Hostname of the server to connect to
+                                * **port (int):**     Server port to connect to 
+                                * **username (str):** Username to authenticate as (defaults to the current local username)        
+                                * **password (str):** Used for password authentication, None if ssh-key is used; is also used for private key decryption if passphrase is not given.
+                                * **sshkey (str):**   Path to private key for keyexchange if password not used, None if not used
+                                * **home (str):**     Path to home directory on remote server
+                                * **scratch (str):**  Path to scratch directory on remote server
         remotePath (str)       : Path to remote file/directory
         localPath (str)        : Path to local file/directory
         abqCommand (str)       : Abaqus command to execute and run script
