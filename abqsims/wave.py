@@ -700,16 +700,13 @@ def DataRetrieval(remote_server, wrkDir, localPath, csvfiles, dataFiles, indento
     
     #  -------------------------------------------Compiled data retrieval----------------------------------------------------------   
     if 'Compile' in kwargs.keys():  
-        # Set base directory name to loop over 
-        wrkDir = '/ABAQUS/TipConvolutionTests/Test_Tip_Convolution'
-        
         # For number of directories set to compile
         for n in range(kwargs['Compile']):
             
             
             for index, rIndentor in enumerate(indentorRadius):
                 # Set path to file
-                remotePath = wrkDir + str(n) + '/IndenterRadius'+str(int(rIndentor))
+                remotePath = wrkDir[:-1] + str(n) + '/IndenterRadius'+str(int(rIndentor))
                 
                 # Check file is available
                 try :
