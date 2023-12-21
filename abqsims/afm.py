@@ -559,21 +559,24 @@ def ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scan
             elasticProperties(arr) :  Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]
     '''
     
-    np.savetxt("atom_coords.csv", atom_coord, delimiter=",")
-    np.savetxt("atom_elements.csv", atom_element, fmt='%s', delimiter=",")
+    ### Creating a folder on the Users system
+    os.makedirs('data', exist_ok=True)
 
-    np.savetxt("atom_radius_keys.csv", list(atom_radius.keys()), fmt='%s', delimiter=",")
-    np.savetxt("atom_radius_values.csv", list(atom_radius.values()), delimiter=",")
+    np.savetxt("data"+os.sep+"atom_coords.csv", atom_coord, delimiter=",")
+    np.savetxt("data"+os.sep+"atom_elements.csv", atom_element, fmt='%s', delimiter=",")
 
-    np.savetxt("clipped_scanPos.csv", clipped_scanPos, delimiter=",")
-    np.savetxt("scanPos.csv", scanPos, fmt='%s', delimiter=",")
+    np.savetxt("data"+os.sep+"atom_radius_keys.csv", list(atom_radius.keys()), fmt='%s', delimiter=",")
+    np.savetxt("data"+os.sep+"atom_radius_values.csv", list(atom_radius.values()), delimiter=",")
 
-    np.savetxt("variables.csv", variables, fmt='%s', delimiter=",")
-    np.savetxt("baseDims.csv", baseDims, fmt='%s', delimiter=",")
-    np.savetxt("tipDims.csv", tipDims, fmt='%s', delimiter=",")
+    np.savetxt("data"+os.sep+"clipped_scanPos.csv", clipped_scanPos, delimiter=",")
+    np.savetxt("data"+os.sep+"scanPos.csv", scanPos, fmt='%s', delimiter=",")
 
-    np.savetxt("elasticProperties.csv", elasticProperties, fmt='%s', delimiter=",")
-    with open('indentorType.txt', 'w', newline = '\n') as f:
+    np.savetxt("data"+os.sep+"variables.csv", variables, fmt='%s', delimiter=",")
+    np.savetxt("data"+os.sep+"baseDims.csv", baseDims, fmt='%s', delimiter=",")
+    np.savetxt("data"+os.sep+"tipDims.csv", tipDims, fmt='%s', delimiter=",")
+
+    np.savetxt("data"+os.sep+"elasticProperties.csv", elasticProperties, fmt='%s', delimiter=",")
+    with open("data"+os.sep+'indentorType.txt', 'w', newline = '\n') as f:
         f.write(indentorType)
 
 # In[19]:
@@ -591,18 +594,20 @@ def ImportVariables():
         scanPos (arr)         : Array of coordinates [x,y,z] of scan positions to image biomolecule and initial heights/ hard sphere boundary
         clipped_scanPos (arr) : Array of clipped (containing only positions where tip and molecule interact) scan positions and initial heights [x,y,z] to image biomolecule
     '''
-    
-    atom_coord      = np.loadtxt('atom_coords.csv', delimiter=",")
-    atom_element    = np.loadtxt("atom_elements.csv", dtype = 'str', delimiter=",")
+    ### Creating a folder on the Users system
+    os.makedirs('data', exist_ok=True)
+ 
+    atom_coord      = np.loadtxt('data' + os.sep + 'atom_coords.csv', delimiter=",")
+    atom_element    = np.loadtxt('data' + os.sep + 'atom_elements.csv', dtype = 'str', delimiter=",")
 
-    keys            = np.loadtxt('atom_radius_keys.csv', dtype = 'str', delimiter=",")
-    values          = np.loadtxt('atom_radius_values.csv', delimiter=",")
+    keys            = np.loadtxt('data' + os.sep + 'atom_radius_keys.csv', dtype = 'str', delimiter=",")
+    values          = np.loadtxt('data' + os.sep + 'atom_radius_values.csv', delimiter=",")
     atom_radius     = {keys[i]:values[i] for i in range(len(keys))}
 
-    variables       = np.loadtxt('variables.csv', delimiter=",")
-    baseDims        = np.loadtxt('baseDims.csv', delimiter=",")
-    scanPos         = np.loadtxt('scanPos.csv', delimiter=",")
-    clipped_scanPos = np.loadtxt('clipped_scanPos.csv', delimiter=",")
+    variables       = np.loadtxt('data' + os.sep + 'variables.csv', delimiter=",")
+    baseDims        = np.loadtxt('data' + os.sep + 'baseDims.csv', delimiter=",")
+    scanPos         = np.loadtxt('data' + os.sep + 'scanPos.csv', delimiter=",")
+    clipped_scanPos = np.loadtxt('data' + os.sep + 'clipped_scanPos.csv', delimiter=",")
 
     return atom_coord, atom_element, atom_radius, variables, baseDims, scanPos, clipped_scanPos
 
@@ -652,7 +657,7 @@ def SSHconnect(remote_server, **kwargs):
         # SSH to clusters using paramiko module
         ssh_client = paramiko.SSHClient()
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh_client.connect(host, port, username, password, key_filename=sshkey, sock=channel)
+        ssh_client.connect(host, int(port), username, password, key_filename=sshkey, sock=channel)
     
     else: 
         # SSH to clusters using paramiko module
@@ -1579,7 +1584,8 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
                     "clipped_scanPos.csv", "scanPos.csv","variables.csv","baseDims.csv", "tipDims.csv", "indentorType.txt", "elasticProperties.csv")
         abqfiles = ('AFMSurfaceModel.py', 'AFMRasterScan.py', 'AFMODBAnalysis.py')
     
-        RemoteSubmission(remote_server, remotePath, localPath, csvfiles, abqfiles, abqCommand, fileName, subData, clipped_scanPos, **kwargs)          
+        RemoteSubmission(remote_server, remotePath, localPath, csvfiles, abqfiles, abqCommand, fileName, subData, clipped_scanPos, **kwargs)  
+        
         
     #  -------------------------------------------------- Post-Processing--------------------------------------------------------  
     if 'Postprocess' not in kwargs.keys() or kwargs['Postprocess'] == True:
@@ -1588,9 +1594,9 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
         try:
             atom_coord, atom_element, atom_radius, variables, baseDims, scanPos, clipped_scanPos = ImportVariables()
             timePeriod, timeInterval, binSize, meshSurface, meshBase, meshIndentor, indentionDepth, surfaceHeight = variables
-            clipped_U2 = np.array(np.loadtxt('U2_Results.csv', delimiter=","))
-            clipped_RF = np.array(np.loadtxt('RF_Results.csv', delimiter=","))
-            clipped_ErrorMask = np.array(np.loadtxt('ErrorMask.csv', delimiter=","))
+            clipped_U2 = np.array(np.loadtxt('data' + os.sep + 'U2_Results.csv', delimiter=","))
+            clipped_RF = np.array(np.loadtxt('data' + os.sep +'RF_Results.csv', delimiter=","))
+            clipped_ErrorMask = np.array(np.loadtxt('data' + os.sep +'ErrorMask.csv', delimiter=","))
             
         # If file missing prompt user to import/ produce files 
         except:
