@@ -239,9 +239,9 @@ def Rotate(domain, rotation):
     Args:
         domain (arr)    : Array of [x,y,z] coordinates in domain to be rotated (Shape: (3) or (N,3) )
         rotation (list) : Array of [xtheta, ytheta, ztheta] rotational angle around coordinate axis:
-                            \- xtheta(float): Angle in degrees for rotation around x axis (Row)
-                            \- ytheta(float): Angle in degrees for rotation around y axis (Pitch)
-                            \- ztheta(float): Angle in degrees for rotation around z axis (Yaw)
+                            \ -  xtheta(float): Angle in degrees for rotation around x axis (Row)
+                            \ -  ytheta(float): Angle in degrees for rotation around y axis (Pitch)
+                            \ -  ztheta(float): Angle in degrees for rotation around z axis (Yaw)
     Returns:
         rotate_domain(arr) : Rotated coordinate array
     '''
@@ -585,7 +585,7 @@ def ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scan
 def ImportVariables():
     '''Import simulation geometry variables from csv files.
 
-    Return:
+    Returns:
         atom_coord (arr)      : Array of coordinates [x,y,z] for atoms in biomolecule 
         atom_element (arr)    : Array of elements names(str) for atoms in biomolecule 
         atom_radius (dict)    : Dictionary containing van der waals radii each the element in the biomolecule 
@@ -626,18 +626,18 @@ def SSHconnect(remote_server, **kwargs):
 
     Args:
         remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]:
-                                \- host (str):     Hostname of the server to connect to
-                                \- port (int):     Server port to connect to 
-                                \- username (str): Username to authenticate as (defaults to the current local username)        
-                                \- password (str): Used for password authentication, None if ssh-key is used; is also used for private key decryption if passphrase is not given.
-                                \- sshkey (str):   Path to private key for keyexchange if password not used, None if not used
-                                \- home (str):     Path to home directory on remote server
-                                \- scratch (str):  Path to scratch directory on remote server
+                                \ -  host (str):     Hostname of the server to connect to
+                                \ -  port (int):     Server port to connect to 
+                                \ -  username (str): Username to authenticate as (defaults to the current local username)        
+                                \ -  password (str): Used for password authentication, None if ssh-key is used; is also used for private key decryption if passphrase is not given.
+                                \ -  sshkey (str):   Path to private key for keyexchange if password not used, None if not used
+                                \ -  home (str):     Path to home directory on remote server
+                                \ -  scratch (str):  Path to scratch directory on remote server
 
     Keywords Args:
         ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
                                            
-    Return: 
+    Returns: 
         ssh_client (obj) : SHH client object which allows for bash command execution and file transfer.
     '''
 
@@ -1091,7 +1091,7 @@ def DataProcessing(clipped_RF, clipped_U2, scanPos, clipped_scanPos, clipped_Err
         timePeriod(float)       : Total time length for ABAQUS simulation/ time step (T)
         timeInterval(float)     : Time steps data sampled over for ABAQUS simulation/ time step (dt)
         
-    Return:
+    Returns:
         U2 (arr)        : Array of indentors z displacement over scan position
         RF (arr)        : Array of reaction force on indentor reference point
         ErrorMask (arr) : Boolean array specifying mask for all scan positions which errored in ABAQUS
@@ -1199,7 +1199,7 @@ def ForceContours(U2, RF,forceRef, scanPos, baseDims, binSize):
         baseDims (arr)   : Geometric parameters for defining base/ substrate structure [width, height, depth]           
         binSize (float)  : Width of bins that subdivid xy domain during raster scanning/ spacing of the positions sampled over
         
-    Return:
+    Returns:
         X (arr) : 2D array of x coordinates over grid positions 
         Y (arr) : 2D array of y coordinates over grid positions 
         Z (arr) : 2D array of z coordinates of force contour over grid positions  
@@ -1457,13 +1457,13 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
     
     Args:
         remote_server (list)   : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]:
-                                \- host (str):     Hostname of the server to connect to
-                                \- port (int):     Server port to connect to 
-                                \- username (str): Username to authenticate as (defaults to the current local username)        
-                                \- password (str): Used for password authentication, None if ssh-key is used; is also used for private key decryption if passphrase is not given.
-                                \- sshkey (str):   Path to private key for keyexchange if password not used, None if not used
-                                \- home (str):     Path to home directory on remote server
-                                \- scratch (str):  Path to scratch directory on remote server
+                                \ -  host (str):     Hostname of the server to connect to
+                                \ -  port (int):     Server port to connect to 
+                                \ -  username (str): Username to authenticate as (defaults to the current local username)        
+                                \ -  password (str): Used for password authentication, None if ssh-key is used; is also used for private key decryption if passphrase is not given.
+                                \ -  sshkey (str):   Path to private key for keyexchange if password not used, None if not used
+                                \ -  home (str):     Path to home directory on remote server
+                                \ -  scratch (str):  Path to scratch directory on remote server
         remotePath (str)       : Path to remote file/directory
         localPath (str)        : Path to local file/directory
         abqCommand (str)       : Abaqus command to execute and run script
@@ -1487,7 +1487,7 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
         meshIndentor (float)   : Value of indentor mesh given as bin size for vertices of geometry in Angstrom (x10-10 m) 
         timePeriod(float)      : Total time length for ABAQUS simulation/ time step (T)
         timeInterval(float)    : Time steps data sampled over for ABAQUS simulation/ time step (dt)
-        
+    \n    
     Keywords Args:
         ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
         Submission ('serial'/ 'paralell') : Type of submission, submit pararlell scripts or single serial script for scan locations {Default: 'serial'}
@@ -1509,7 +1509,7 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
         Noise (list)         : If listed adds noise to AFM images [strength, mean, standard deviation]
         imagePadding (float) : Black space / padding around image as percentage of dimensions of molecule extent
         SaveImages (str)     : If Contour images to be saved include kwarg specifying the file path to folder       
-            
+    \n        
     Returns:          
         U2 (arr)        : Array of indentors z displacement over scan position
         RF (arr)        : Array of reaction force on indentor reference point
