@@ -744,7 +744,7 @@ def BatchSubmission(remote_server, fileName, subData, scanPos, remotePath, **kwa
         ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall. Defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
         Submission ('serial'/ 'paralell') : Optional define whether single serial script or seperate paralell submission to queue {Default: 'serial'}  
     '''
-    
+
     # For paralell mode create bash script to runs for single scan location, then loop used to submit individual scripts for each location which run in paralell
     if 'Submission' in kwargs and kwargs['Submission'] == 'paralell':
         jobs = 'abaqus interactive cpus=$NSLOTS mp_mode=mpi job=$JOB_NAME input=$JOB_NAME.inp scratch=$ABAQUS_PARALLELSCRATCH resultsformat=odb'
@@ -872,12 +872,15 @@ def RemoteFTPFiles(remote_server, files, remotePath, localPath, **kwargs):
     Keywords Args:
         ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
     '''
+    ### Creating a folder on the Users system
+    os.makedirs('data', exist_ok=True)
+    
     # SSH to cluster
     ssh_client = SSHconnect(remote_server, **kwargs)
 
     # FTPCLient takes a paramiko transport as an argument- copy content from remote directory
     ftp_client=ssh_client.open_sftp()
-    ftp_client.get(remotePath+'/'+files, localPath + os.sep + 'data'+ os.sep+ files)  
+    ftp_client.get(remotePath+'/'+files, localPath + os.sep + 'data'+ os.sep + files)  
     ftp_client.close()
 
 
