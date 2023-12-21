@@ -45,6 +45,7 @@ extensions = ['sphinx_rtd_theme',
 
 autosummary_generate = True
 napoleon_google_docstring = True
+napoleon_custom_sections = [('Returns', 'params_style')]
 # napoleon_use_param = False
 # napoleon_use_ivar = True
 
