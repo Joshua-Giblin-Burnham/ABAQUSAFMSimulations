@@ -1893,7 +1893,7 @@ def LineContourPlot(X, Z, rackPos, forceContour, refForces, clearance, A, N, wav
 
     # --------------------------------------------Plot color bar -----------------------------------------------------------
     # plt.legend(frameon=False)
-    cbar = plt.colorbar(plt.cm.ScalarMappable(cmap=cmap, norm=normalizer), fraction=0.035, pad=0.02)
+    cbar = plt.colorbar(plt.cm.ScalarMappable(cmap=cmap, norm=normalizer), ax=ax, fraction=0.035, pad=0.02)
     cbar.set_label(r'$\frac{F}{E*R^2}$', rotation=0)
     cbar.set_ticks(np.round(10*np.array([0, maxRF*0.25**(1/0.45), maxRF*0.75**(1/0.45), maxRF]))/10)
     cbar.ax.yaxis.set_label_coords(4, 0.6)       

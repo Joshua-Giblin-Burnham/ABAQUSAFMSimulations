@@ -12,6 +12,7 @@ import time
 import subprocess
 from datetime import timedelta
 import paramiko
+import socket
 from scp import SCPClient
 
 # ---------------------------------------------Mathematical/Plotting Imports--------------------------------------------
@@ -205,6 +206,10 @@ def ScanGeometry(indentorType, tipDims, baseDims, rSurface, Nb, clearance):
     return rackPos
 
 # %% [markdown]
+# ### Remote Functions
+# Functions for working on remote serve, including transfering files, submitting bash commands, submiting bash scripts for batch input files and check queue statis.
+
+# %% [markdown]
 # #### File Import/ Export Function
 
 # %%
@@ -219,12 +224,15 @@ def ExportVariables(rackPos, variables, baseDims, tipDims, indentorType, elastic
         indentorType (str)      : String defining indentor type (Spherical or Capped)
         elasticProperties (arr) : Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]
     '''
-    np.savetxt("elasticProperties", elasticProperties, fmt='%s', delimiter=",")
-    np.savetxt("rackPos.csv",       rackPos,           fmt='%s', delimiter=",")
-    np.savetxt("variables.csv",     variables,         fmt='%s', delimiter=",")
-    np.savetxt("baseDims.csv",      baseDims,          fmt='%s', delimiter=",")
-    np.savetxt("tipDims.csv",       tipDims,           fmt='%s', delimiter=",")
+    ### Creating a folder on the Users system
+    os.makedirs('data', exist_ok=True)
 
+    np.savetxt("data"+os.sep+"elasticProperties.csv", elasticProperties, fmt='%s', delimiter=",")
+    np.savetxt("data"+os.sep+"variables.csv", variables, fmt='%s', delimiter=",")
+    np.savetxt("data"+os.sep+"rackPos.csv", rackPos, fmt='%s', delimiter=",")
+    np.savetxt("data"+os.sep+"baseDims.csv", baseDims, fmt='%s', delimiter=",")
+    np.savetxt("data"+os.sep+"tipDims.csv", tipDims, fmt='%s', delimiter=",")
+    
     with open('indentorType.txt', 'w', newline = '\n') as f:
         f.write(indentorType)
 
@@ -232,77 +240,123 @@ def ExportVariables(rackPos, variables, baseDims, tipDims, indentorType, elastic
 def ImportVariables():
     '''Import simulation geometry variables from csv files.
     
-    Return:
+    Returns:
         variables (list) : List of simulation variables: [timePeriod, timeInterval, binSize, meshSurface, meshBase, meshIndentor, indentionDepth, surfaceHeight]
         baseDims (list)  : Geometric parameters for defining base/ substrate structure [width, height, depth]             
         rackPos (arr)    : Array of coordinates [x,z] of scan positions to image biomolecule  
     '''
-    variables          = np.loadtxt('variables.csv', delimiter=",")
-    baseDims           = np.loadtxt('baseDims.csv', delimiter=",")
-    rackPos            = np.loadtxt('rackPos.csv', delimiter=",")
+    ### Creating a folder on the Users system
+    os.makedirs('data', exist_ok=True)
+
+    variables = np.loadtxt("data"+os.sep+"variables.csv", delimiter=",")
+    baseDims  = np.loadtxt("data"+os.sep+"baseDims.csv", delimiter=",")
+    rackPos   = np.loadtxt("data"+os.sep+"rackPos.csv", delimiter=",")
     
     return variables, baseDims, rackPos
 
 # %% [markdown]
-# ### Remote Functions
-# Functions for working on remote serve, including transfering files, submitting bash commands, submiting bash scripts for batch input files and check queue statis.
-
-# %% [markdown]
-# #### File Transfer`
+# #### Remote Connect
 
 # %%
-def RemoteSCPFiles(host, port, username, password, files, remotePath):
-    '''Function to make directory and transfer files to SSH server. 
+def SSHconnect(remote_server, **kwargs):
+    ''' Function to open ssh connecction to remote server. 
     
-    A new Channel is opened and the files are transfered. The command’s input and output streams are returned as Python 
-    file-like objects representing stdin, stdout, and stderr.
+    A new Channel is opened and allows requested command to be executed in other functions. The function allows for ProxyJumpp/Port Forwarding/SSH Tunelling.
 
     Args:
-        host (str)       : Hostname of the server to connect to
-        port (int)       : Server port to connect to 
-        username (str)   : username to authenticate as (defaults to the current local username)        
-        password (str)   : Used for password authentication; is also used for private key decryption if passphrase is not given.
-        files (str/list) : File or list of file to transfer
-        remotePath (str) : Path to remote file/directory
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]:
+                                \n - host (str):     Hostname of the server to connect to
+                                \n - port (int):     Server port to connect to 
+                                \n - username (str): Username to authenticate as (defaults to the current local username)        
+                                \n - password (str): Used for password authentication, None if ssh-key is used; is also used for private key decryption if passphrase is not given.
+                                \n - sshkey (str):   Path to private key for keyexchange if password not used, None if not used
+                                \n - home (str):     Path to home directory on remote server
+                                \n - scratch (str):  Path to scratch directory on remote server
+    Keyword Args:
+        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; 
+                                        defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
+                                        
+    Returns: 
+        ssh_client (obj) : SHH client object which allows for bash command execution and file transfer.
+    '''
+
+    host, port, username, password, sshkey, home, scratch = remote_server
+
+    if 'ProxyJump' in kwargs:
+        # Set variables for proxy port
+        proxy_host, proxy_port, proxy_username, proxy_password, proxy_sshkey, proxy_home, proxy_scratch = kwargs['ProxyJump']
+        hostname = socket.getfqdn()
+        remote_addr = (host, int(port))
+        local_addr  = (socket.gethostbyname_ex(hostname)[2][0], 22)
+
+        # Create proxy jump/ ssh tunnel
+        proxy_client = paramiko.SSHClient()
+        proxy_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        proxy_client.connect(proxy_host, int(proxy_port), proxy_username, proxy_password, key_filename=proxy_sshkey)
+        transport = proxy_client.get_transport()
+        channel = transport.open_channel("direct-tcpip", remote_addr, local_addr)
+
+        # SSH to clusters using paramiko module
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh_client.connect(host, int(port), username, password, key_filename=sshkey, sock=channel)
+    
+    else: 
+        # SSH to clusters using paramiko module
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh_client.connect(host, int(port), username, password, key_filename=sshkey)
+
+    return ssh_client
+
+# %% [markdown]
+# #### File Transfer
+
+# %%
+def RemoteSCPFiles(remote_server, files, remotePath, **kwargs):
+    '''Function to make directory and transfer files to SSH server.
+     
+    A new Channel is opened and the files are transfered.The commands input and output streams are returned as Python file-like objects representing stdin, stdout, and stderr.
+    
+    Args:
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
+        files (str/list)     : File or list of file to transfer
+        remotePath (str)     : Path to remote file/directory
+    
+    Keywords Args:
+        ProxyJump (proxy_server)  : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
     '''
     # SHH to clusters
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh_client.connect(host, port, username, password)
-
+    ssh_client = SSHconnect(remote_server, **kwargs)
     stdin, stdout, stderr = ssh_client.exec_command('mkdir -p ' + remotePath)
 
     # SCPCLient takes a paramiko transport as an argument- Uploading content to remote directory
     scp_client = SCPClient(ssh_client.get_transport())
-    scp_client.put(files, recursive=True, remote_path = remotePath)
+    scp_client.put(["data"+os.sep+file for file in files], recursive=True, remote_path = remotePath)
     scp_client.close()
     
     ssh_client.close()
 
-# %% [markdown]
-# #### Bash Command Submission
+# ##### Bash Command Submission
 
-# %%
-def RemoteCommand(host, port, username, password, script, remotePath, command):
+# In[23]:
+
+def RemoteCommand(remote_server, script, remotePath, command, **kwargs):
     '''Function to execute a command/ script submission on the SSH server. 
     
-    A new Channel is opened and the requested command is executed. The command’s input and output streams are returned as Python 
-    file-like objects representing stdin, stdout, and stderr.
+    A new Channel is opened and the requested command is executed. The commands input and output streams are returned as Python file-like objects representing stdin, stdout, and stderr.
     
     Args:
-        host (str)       : Hostname of the server to connect to
-        port (int)       : Server port to connect to 
-        username (str)   : username to authenticate as (defaults to the current local username)         
-        password (str)   : Used for password authentication; is also used for private key decryption if passphrase is not given.
-        script (str)     : Script to run via bash command 
-        remotePath (str) : Path to remote file/directory
-        command (str)    : Abaqus command to execute and run script
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
+        script (str)         : Script to run via bash command 
+        remotePath (str)     : Path to remote file/directory
+        command (str)        : Abaqus command to execute and run script   
+                     
+    Keywords Args:
+        ProxyJump (proxy_server)  : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
     '''
-    # SSH to clusters using paramiko module
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh_client.connect(host, port, username, password)
     
+    ssh_client = SSHconnect(remote_server, **kwargs)
     # Execute command
     stdin, stdout, stderr = ssh_client.exec_command('cd ' + remotePath + ' \n '+ command +' '+ script +' & \n')
     lines = stdout.readlines()
@@ -312,58 +366,51 @@ def RemoteCommand(host, port, username, password, script, remotePath, command):
     for line in lines:
         print(line)
 
-# %% [markdown]
-# #### Batch File Submission
+# In[24]:
+# ##### Batch File Submission
 
-# %%
-def BatchSubmission(host, port, username, password, fileName, subData, rackPos, remotePath, **kwargs):
-    '''Function to create bash script for batch submission of input file, and run them on remote server.
-    
-    Args:
-        host (str)       : Hostname of the server to connect to
-        port (int)       : Server port to connect to 
-        username (str)   : username to authenticate as (defaults to the current local username)        
-        password (str)   : Used for password authentication; is also used for private key decryption if passphrase is not given.
-        fileName (str)   : Base File name for abaqus input files
-        subData (str)    : Data for submission to serve queue [walltime, memory, cpus]
-        rackPos (arr)    : Array of coordinates [x,z] of scan positions to image biomolecule (can be clipped or full) 
-        remotePath (str) : Path to remote file/directory
+# In[25]:
+
+def BatchSubmission(remote_server, fileName, subData, scanPos, remotePath, **kwargs):
+    ''' Function to create bash script for batch submission of input file, and run them on remote server.
         
-    Keyword Args:
-        Submission ('serial'/ 'paralell') : optional define whether single serial script or seperate paralell submission to queue {Default: 'serial'}  
+    Args:
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
+        fileName (str)       : Base File name for abaqus input files
+        subData (str)        : Data for submission to serve queue [walltime, memory, cpus]
+        scanPos (arr)        : Array of coordinates [x,y] of scan positions to image biomolecule (can be clipped or full) 
+        remotePath (str)     : Path to remote file/directory
+            
+    Keywords Args:
+        ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall. Defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
+        Submission ('serial'/ 'paralell') : Optional define whether single serial script or seperate paralell submission to queue {Default: 'serial'}  
     '''
+
     # For paralell mode create bash script to runs for single scan location, then loop used to submit individual scripts for each location which run in paralell
     if 'Submission' in kwargs and kwargs['Submission'] == 'paralell':
-        lines = ['#!/bin/bash -l',
-                 '#$ -S /bin/bash',
-                 '#$ -l h_rt='+ subData[0],
-                 '#$ -l mem=' + subData[1],
-                 '#$ -pe mpi ' + subData[2],
-                 '#$ -wd /home/zcapjgi/Scratch/ABAQUS',
-                 'module load abaqus/2017 ',
-                 'ABAQUS_PARALLELSCRATCH = "/home/zcapjgi/Scratch/ABAQUS" ',
-                 'cd ' + remotePath,
-                 'gerun abaqus interactive cpus=$NSLOTS mp_mode=mpi job=$JOB_NAME input=$JOB_NAME.inp scratch=$ABAQUS_PARALLELSCRATCH resultsformat=odb'
-                ]
+        jobs = 'abaqus interactive cpus=$NSLOTS mp_mode=mpi job=$JOB_NAME input=$JOB_NAME.inp scratch=$ABAQUS_PARALLELSCRATCH resultsformat=odb'
         
     # Otherwise, create script to run serial analysis consecutively with single submission
     else:
         # Create set of submission comands for each scan locations
-        jobs   = ['gerun abaqus interactive cpus=$NSLOTS mp_mode=mpi job='+fileName+str(int(i))+' input='+fileName+str(int(i))+'.inp scratch=$ABAQUS_PARALLELSCRATCH resultsformat=odb' 
-                  for i in range(len(rackPos))]
+        jobs = ['abaqus interactive cpus=$NSLOTS memory="90%" mp_mode=mpi standard_parallel=all job='+fileName+str(int(i))+' input='+fileName+str(int(i))+'.inp scratch=$ABAQUS_PARALLELSCRATCH' 
+                for i in range(len(scanPos))]
+    
+    # Produce preamble to used to set up bash script
+    scratch = remote_server[-1]
+    lines = ['#!/bin/bash -l',
+             '#$ -S /bin/bash',
+             '#$ -l h_rt='+ subData[0],
+             '#$ -l mem=' + subData[1],
+             '#$ -pe mpi '+ subData[2],
+             '#$ -wd '+scratch,
+             'module load abaqus/2017 ',
+             'ABAQUS_PARALLELSCRATCH="'+scratch+'" ',
+             'cd ' + remotePath 
+            ]
         
-        # Produce preamble to used to set up bash script
-        lines = ['#!/bin/bash -l',
-                    '#$ -S /bin/bash',
-                    '#$ -l h_rt='+ subData[0],
-                    '#$ -l mem=' + subData[1],
-                    '#$ -pe mpi ' + subData[2],
-                    '#$ -wd /home/zcapjgi/Scratch/ABAQUS',
-                    'module load abaqus/2017 ',
-                    'ABAQUS_PARALLELSCRATCH = "/home/zcapjgi/Scratch/ABAQUS" ',
-                    'cd ' + remotePath ]
-        # Combine to produce total  script
-        lines+=jobs
+    # Combine to produce total  script
+    lines+=jobs
 
     # Create script file in current directory by writing each line to file
     with open('batchScript.sh', 'w', newline = '\n') as f:
@@ -372,10 +419,7 @@ def BatchSubmission(host, port, username, password, fileName, subData, rackPos, 
             f.write('\n')
 
     # SSH to clusters 
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh_client.connect(host, port, username, password)
-
+    ssh_client = SSHconnect(remote_server, **kwargs)
     stdin, stdout, stderr = ssh_client.exec_command('mkdir -p ' + remotePath)
 
     # SCPCLient takes a paramiko transport as an argument- Uploading content to remote directory
@@ -385,17 +429,16 @@ def BatchSubmission(host, port, username, password, fileName, subData, rackPos, 
     
     # If paralell mode, submit  individual scripts for individual scan locations
     if 'Submission' in kwargs and kwargs['Submission'] == 'paralell':
-        for i in range(len(rackPos)):
+        for i in range(len(scanPos)):
             # Job name set as each input file name as -N jobname is used as input variable in script
             jobName = fileName+str(int(i))
-            
             # Command to run individual jobs
             batchCommand = 'cd ' + remotePath + ' \n qsub -N '+ jobName +' batchScript.sh \n'
 
             # Execute command
             stdin, stdout, stderr = ssh_client.exec_command(batchCommand)
-            output_line = stdout.readlines()
-            print(output_line)
+            lines = stdout.readlines()
+            print(lines)
     
     # Otherwise submit single serial scripts
     else:
@@ -405,23 +448,24 @@ def BatchSubmission(host, port, username, password, fileName, subData, rackPos, 
 
         # Execute command
         stdin, stdout, stderr = ssh_client.exec_command(batchCommand)
-        output_line = stdout.readlines()
-        print(output_line)
+        lines = stdout.readlines()
+        print(lines)
         
     ssh_client.close() 
 
-# %% [markdown]
-# #### Queue Status 
+# In[26]:
+# ##### Queue Status Function
 
-# %%
-def QueueCompletion(host, port, username, password):
+# In[27]:
+
+def QueueCompletion(remote_server, **kwargs):
     '''Function to check queue statis and complete when queue is empty.
 
     Args:
-        host (str)       : Hostname of the server to connect to
-        port (int)       : Server port to connect to 
-        username (str)   : username to authenticate as (defaults to the current local username) 
-        password (str)   : Used for password authentication; is also used for private key decryption if passphrase is not given.
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
+                       
+    Keywords Args:
+        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
     '''
     # Log time
     t0 = time.time()
@@ -429,9 +473,7 @@ def QueueCompletion(host, port, username, password):
 
     while complete == False:
         # SSH to clusters 
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh_client.connect(host, port, username, password)
+        ssh_client = SSHconnect(remote_server, **kwargs)
 
         # Execute command to view the queue
         stdin, stdout, stderr = ssh_client.exec_command('qstat')
@@ -452,54 +494,57 @@ def QueueCompletion(host, port, username, password):
     t1 = time.time()
     print(t1-t0)
 
-# %% [markdown]
-# #### File Retrieval
+# In[28]:
+# ##### File Retrieval
 
-# %%
-def RemoteFTPFiles(host, port, username, password, files, remotePath, localPath):
-    '''Function to transfer files from directory on SSH server to local machine. 
+# In[29]:
+
+def RemoteFTPFiles(remote_server, files, remotePath, localPath, **kwargs):
+    '''  Function to transfer files from directory on SSH server to local machine. 
     
     A new Channel is opened and the files are transfered. The function uses FTP file transfer.
-
+    
     Args:
-        host (str)       : Hostname of the server to connect to
-        port (int)       : Server port to connect to 
-        username (str)   : username to authenticate as (defaults to the current local username)        
-        password (str)   : Used for password authentication; is also used for private key decryption if passphrase is not given.
-        files (str )     : File to transfer
-        remotePath (str) : Path to remote file/directory
-        localPath (str)  : Path to local file/directory
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
+        files (str )         : File to transfer
+        remotePath (str)     : Path to remote file/directory
+        localPath (str)      : Path to local file/directory
+
+    Keywords Args:
+        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
     '''
+    ### Creating a folder on the Users system
+    os.makedirs('data', exist_ok=True)
+    
     # SSH to cluster
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh_client.connect(host, port, username, password)
+    ssh_client = SSHconnect(remote_server, **kwargs)
 
     # FTPCLient takes a paramiko transport as an argument- copy content from remote directory
     ftp_client=ssh_client.open_sftp()
-    ftp_client.get(remotePath+'/'+files, localPath +os.sep+ files)  
+    ftp_client.get(remotePath+'/'+files, localPath + os.sep + 'data'+ os.sep + files)  
     ftp_client.close()
 
-# %% [markdown]
-# #### Remote Terminal
 
-# %%
-def Remote_Terminal(host, port, username, password):
-    '''Function to emulate cluster terminal. 
+# In[30]:
+# ##### Remote Terminal
+
+# In[31]:
+
+def Remote_Terminal(remote_server, **kwargs):
+    ''' Function to emulate cluster terminal. 
     
-    Channel is opened and commands given are executed. The command’s input and output streams are returned as Python 
-    file-like objects representing stdin, stdout, and stderr.
+    Channel is opened and commands given are executed. The commands input and output streams are returned as Python file-like objects representing  
+    stdin, stdout, and stderr.
     
     Args:
-        host (str)       : Hostname of the server to connect to
-        port (int)       : Server port to connect to 
-        username (str)   : username to authenticate as (defaults to the current local username)       
-        password (str)   : Used for password authentication; is also used for private key decryption if passphrase is not given.
-    '''  
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
+                
+    Keywords Args:
+        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
+    '''
+    
     # SHH to cluster
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh_client.connect(host, port, username, password)
+    ssh_client = SSHconnect(remote_server, **kwargs)
     
     # Create channel to keep connection open
     ssh_channel = ssh_client.get_transport().open_session()
@@ -531,33 +576,30 @@ def Remote_Terminal(host, port, username, password):
 # Function to run simulation and scripts on the remote servers. Files for variables are transfered, ABAQUS scripts are run to create parts and input files. A bash file is created and submitted to run simulation for batch of inputs. Analysis of odb files is performed and data transfered back to local machine. Using keyword arguments invidual parts of simulation previously completed can be skipped.
 
 # %%
-def RemoteSubmission(host, port, username, password, remotePath, localPath,  csvfiles, abqfiles, abqCommand, fileName, subData, rackPos, **kwargs):
+def RemoteSubmission(remote_server, remotePath,  csvfiles, abqfiles, abqCommand, fileName, subData, rackPos, **kwargs):
     '''Function to run simulation and scripts on the remote servers. 
     
     Files for variables are transfered, ABAQUS scripts are run to create parts and input files. A bash file is created and submitted to run simulation for 
     batch of inputs. Analysis of odb files is performed and data transfered back to local machine. Using keyword arguments can submitt the submission files in parrallel.
     
     Args:
-        host (str)       : Hostname of the server to connect to
-        port (int)       : Server port to connect to 
-        username (str)   : Username to authenticate as (defaults to the current local username)        
-        password (str)   : Used for password authentication; is also used for private key decryption if passphrase is not given.
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
         remotePath (str) : Path to remote file/directory
-        localPath (str)  : Path to local file/directory
         csvfiles (list)  : List of csv and txt files to transfer to remote server
         abqfiles (list)  : List of abaqus script files to transfer to remote server
         abqCommand (str) : Abaqus command to execute and run script
         fileName (str)   : Base File name for abaqus input files
         subData (str)    : Data for submission to serve queue [walltime, memory, cpus]
-        rackPos (arr)    : Array of scan positions and initial heights [x,z] to image 
+        rackPos (arr)    : Array of scan positions and initial height [x,z] to image 
     
-    Keyword Args: 
-        Submission('serial'/ 'paralell'): Passes "Submmission" if present to batchSubmission function       
+    Keyword Args:           
+        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
+        Submission ('serial'/ 'paralell') : Type of submission, submit pararlell scripts or single serial script for scan locations {Default: 'serial'}
     '''
     #  ---------------------------------------------File Transfer----------------------------------------------------------       
     # Transfer scripts and variable files to remote server
-    RemoteSCPFiles(host, port, username, password, csvfiles, remotePath)
-    RemoteSCPFiles(host, port, username, password, abqfiles, remotePath)
+    RemoteSCPFiles(remote_server, csvfiles, remotePath, **kwargs)
+    RemoteSCPFiles(remote_server, abqfiles, remotePath, **kwargs)
 
     print('File Transfer Complete')
 
@@ -567,7 +609,7 @@ def RemoteSubmission(host, port, username, password, remotePath, localPath,  csv
 
     # Produce simulation and input files
     script = 'AFMtestRasterScan.py'
-    RemoteCommand(host, port, username, password, script, remotePath, abqCommand)
+    RemoteCommand(remote_server, script, remotePath, abqCommand, **kwargs)
 
     t1 = time.time()
     print('Input File Complete - ' + str(timedelta(seconds=t1-t0)) )
@@ -577,33 +619,31 @@ def RemoteSubmission(host, port, username, password, remotePath, localPath,  csv
     print('Submitting Batch Scripts ...')
 
     # Submit bash scripts to remote queue to carry out batch abaqus analysis
-    BatchSubmission(host, port, username, password, fileName, subData, rackPos, remotePath, **kwargs) 
+    BatchSubmission(remote_server, fileName, subData, rackPos, remotePath, **kwargs) 
 
     t1 = time.time()
-    print('Batch Submission Complete - '+ str(timedelta(seconds=t1-t0)) + '\n')
+    print('Batch Submission Complete - '+ str(timedelta(seconds=t1-t0)) + '\n' )
 
 # %%
-def DataRetrieval(host, port, username, password, scratch, wrkDir, localPath, csvfiles, dataFiles, indentorRadius, **kwargs):
-    '''Function to retrieve simulation data transfered back to local machine. Using keyword arguments to change to compilation of simulations data.
+def DataRetrieval(remote_server, wrkDir, localPath, csvfiles, dataFiles, indentorRadius, **kwargs):
+    '''Function to retrieve simulation data transfered back to local machine.
+     
+    Using keyword arguments to change to compilation of simulations data.
     
     Args:
-        host (str)           : Hostname of the server to connect to
-        port (int)           : Server port to connect to 
-        username (str)       : Username to authenticate as (defaults to the current local username)          
-        password (str)       : Used for password authentication; is also used for private key decryption if passphrase is not given.
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
         remotePath (str)     : Path to remote file/directory
         localPath (str)      : Path to local file/directory
         csvfiles (list)      : List of csv and txt files to transfer to remote server
         datafiles (list)     : List of abaqus script files to transfer to remote server
         indentorRadius (arr) : Array of indentor radii of spherical tip portion varied for seperate  simulations
-        
+
     Keyword Args:
-        Compile (int): If passed, simulation data is compiled from seperate sets of simulations in directory in remote server to combine complete indentations. 
-                       Value is set as int representing the range of directories to compile from (directories must have same root naming convention with int 
-                       denoting individual directories)
-                                        
-    Return:
-        variables (list) : List of simulation variables: [timePeriod, timeInterval, binSize, meshSurface, meshIndentor, indentionDepth, surfaceHeight]
+        Compile(int): If passed, simulation data is compiled from seperate sets of simulations in directory in remote server to combine complete indentations. Value is set as int representing the range of directories to compile from (directories must have same root naming convention with int denoting individual directories)
+        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
+
+    Returns:
+        variables (list) : List of simulation variables: [timePeriod, timeInterval, binSize, meshSurface, meshIndentor, indentionDepth]
         TotalU2 (arr)    : Array of indentors z displacement in time over scan position and  for all indenter [Ni, Nb, Nt]
         TotalRF (arr)    : Array of reaction force in time on indentor reference point over scan position  and for all indenter [Ni, Nb, Nt]
         NrackPos (arr)   : Array of initial scan positions for each indenter [Ni, Nb, [x, z] ]    
@@ -611,7 +651,7 @@ def DataRetrieval(host, port, username, password, scratch, wrkDir, localPath, cs
     #  -------------------------------------------------Remote Variable------------------------------------------------------------
     # Import variables from remote server used for the simulations
     for file in csvfiles:    
-        RemoteFTPFiles(host, port, username, password, file, scratch+wrkDir+'/IndenterRadius1', localPath)
+        RemoteFTPFiles(remote_server, file, wrkDir+'/IndenterRadius7', localPath, **kwargs)
     
     # Set simulation variables used to process data
     variables, baseDims, rackPos  = ImportVariables()
@@ -628,31 +668,28 @@ def DataRetrieval(host, port, username, password, scratch, wrkDir, localPath, cs
     
     #  -------------------------------------------Compiled data retrieval----------------------------------------------------------   
     if 'Compile' in kwargs.keys():  
-        # Set base directory name to loop over 
-        wrkDir = '/ABAQUS/HemisphereTests/Test_Hemisphere'
-        
         # For number of directories set to compile
         for n in range(kwargs['Compile']):
             
             
             for index, rIndentor in enumerate(indentorRadius):
                 # Set path to file
-                remotePath = scratch + wrkDir + str(n) + '/IndenterRadius'+str(int(rIndentor))
+                remotePath = wrkDir[:-1] + str(n) + '/IndenterRadius'+str(int(rIndentor))
                 
                 # Check file is available
                 try :
-                    RemoteFTPFiles(host, port, username, password, dataFiles[0], remotePath, localPath)
-                    RemoteFTPFiles(host, port, username, password, dataFiles[1], remotePath, localPath)
-                    RemoteFTPFiles(host, port, username, password, dataFiles[2], remotePath, localPath)
+                    RemoteFTPFiles(remote_server, dataFiles[0], remotePath, localPath, **kwargs)
+                    RemoteFTPFiles(remote_server, dataFiles[1], remotePath, localPath, **kwargs)
+                    RemoteFTPFiles(remote_server, dataFiles[2], remotePath, localPath, **kwargs)
 
                 except:
                     None
 
                 else:
                     # If files are available load data in to temperary variable 
-                    U2 = np.array(np.loadtxt(dataFiles[0], delimiter=","))
-                    RF = np.array(np.loadtxt(dataFiles[1], delimiter=","))  
-                    NrackPos[index] = np.array(np.loadtxt(dataFiles[2], delimiter=",")) 
+                    U2 = np.array(np.loadtxt("data"+os.sep+dataFiles[0], delimiter=","))
+                    RF = np.array(np.loadtxt("data"+os.sep+dataFiles[1], delimiter=","))  
+                    NrackPos[index] = np.array(np.loadtxt("data"+os.sep+dataFiles[2], delimiter=",")) 
                     
                     # Loop through data and store indentations with less zeros/ higher sums of forces
                     for i in range(len(RF)):
@@ -665,19 +702,25 @@ def DataRetrieval(host, port, username, password, scratch, wrkDir, localPath, cs
         # For each indentor
         for index, rIndentor in enumerate(indentorRadius):
             # Define path to file
-            remotePath = scratch + wrkDir + '/IndenterRadius'+str(int(rIndentor))
+            remotePath = wrkDir + '/IndenterRadius'+str(int(rIndentor))
             
             # Retrive data files and store in curent directory
-            RemoteFTPFiles(host, port, username, password, dataFiles[0], remotePath, localPath)
-            RemoteFTPFiles(host, port, username, password, dataFiles[1], remotePath, localPath)
-            RemoteFTPFiles(host, port, username, password, dataFiles[2], remotePath, localPath)
+            try :
+                RemoteFTPFiles(remote_server, dataFiles[0], remotePath, localPath, **kwargs)
+                RemoteFTPFiles(remote_server, dataFiles[1], remotePath, localPath, **kwargs)
+                RemoteFTPFiles(remote_server, dataFiles[2], remotePath, localPath, **kwargs)
 
-            # Load and set data in array for all indentors
-            TotalU2[index]  = np.array(np.loadtxt(dataFiles[0], delimiter=","))
-            TotalRF[index]  = np.array(np.loadtxt(dataFiles[1], delimiter=","))  
-            NrackPos[index] =  np.array(np.loadtxt(dataFiles[2], delimiter=","))  
+            except:
+                None
+
+            else:
+                # Load and set data in array for all indentors
+                TotalU2[index]  = np.array(np.loadtxt("data"+os.sep+dataFiles[0], delimiter=","))
+                TotalRF[index]  = np.array(np.loadtxt("data"+os.sep+dataFiles[1], delimiter=","))  
+                NrackPos[index] =  np.array(np.loadtxt("data"+os.sep+dataFiles[2], delimiter=","))  
 
     return variables, TotalU2, TotalRF, NrackPos
+
 
 # %% [markdown]
 # ### Post-Processing Functions
@@ -703,7 +746,7 @@ def ForceGrid2D(X, Z, U2, RF, rackPos, courseGrain, **kwargs):
     Keyword Args:
         Symmetric: If false skip postprocessing step to produce AFM image from data {Default: True}
     
-    Return:
+    Returns:
         forceGrid (arr)        : 2D Array of force heatmap over xz domain of scan i.e. grid of xz positions with associated force [Nx,Nz] 
         forceGridmask (arr)    : 2D boolean array giving mask for force grid with exclude postions with no indentation data [Nx,Nz] 
         forceContour (arr)     : 2D Array of coordinates for contours of constant force given by reference force across scan positons 
@@ -770,7 +813,7 @@ def ForceContour2D(U2, RF, rackPos, forceRef, **kwargs):
     Keyword Args:
         Symmetric: If false skip postprocessing step to produce AFM image from data {Default: True}
             
-    Return:
+    Returns:
         forceContour (arr)     : 2D Array of coordinates for contours of constant force given by reference force across scan positons 
         forceContourmask (arr) : 2D boolean array giving mask for force contour for zero values in which no reference force 
     '''
@@ -836,7 +879,7 @@ def ForceInterpolation(Xgrid, Zgrid, U2, RF, rackPos, rIndentor, rSurface, elast
         elasticProperties (arr) : Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]
         Nt (int)                : Number of time steps
         
-    Return:
+    Returns:
         E_hertz (arr)      : Array of fitted elastic modulus value over scan positions for each indentor [Ni,Nb]
         F (arr)            : Array of interpolated force values over xz grid for all indentors and reference force [Ni, Nb, Nz] 
     '''
@@ -882,7 +925,7 @@ def FWHM_Volume(forceContour, NrackPos, Nf, Ni, indentorRadius, rSurface):
         indentorRadius (arr) : Array of indentor radii of spherical tip portion varied for seperate  simulations
         rSurface (float)     : Radius of semi-sphere surface
         
-    Return:
+    Returns:
         FWHM (arr)   : Array of full width half maxima of force contour for corresponding indentor and reference force [Nf,Ni]
         Volume (arr) : Array of volume under force contour for corresponding indentor and reference force [Nf,Ni]
     '''
@@ -962,7 +1005,7 @@ def Postprocessing(TotalU2, TotalRF, NrackPos, Nb, Nt, courseGrain, refForces, i
         rSurface (float)        : Radius of semi-sphere surface
         elasticProperties (arr) : Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]
         
-    Return:
+    Returns:
         X (arr)            : 1D array of postions over x domain of scan positions
         Z (arr)            : 1D array of postions over z domain of scan positions, discretised into bins of courseGrain value
         forceGrid (arr)    : 2D Array of force heatmap over xz domain of scan i.e. grid of xz positions with associated force for all indentors and reference force [Nf, Ni, Nb, Nz] (With mask applied). 
@@ -1034,7 +1077,7 @@ def Postprocessing(TotalU2, TotalRF, NrackPos, Nb, Nt, courseGrain, refForces, i
 # Final simulation function
 
 # %%
-def HemisphereSimulation(host, port, username, password, scratch, wrkDir, localPath, abqCommand, fileName, subData, 
+def  AFMSimulation(remote_server, wrkDir, localPath, abqCommand, fileName, subData, 
                   indentorType, indentorRadius, theta_degrees, tip_length, indentionDepths, baseDims, rSurface, 
                   refForces, courseGrain, binSize, clearance, meshSurface, meshIndentor, timePeriod, timeInterval, 
                   elasticProperties, **kwargs):
@@ -1044,11 +1087,7 @@ def HemisphereSimulation(host, port, username, password, scratch, wrkDir, localP
     Produces a heatmap of the AFM image, and 3D plots of the sample surface for given force threshold.
     
     Args:
-        host (str)              : Hostname of the server to connect to
-        port (int)              : Server port to connect to 
-        username (str)          : Username to authenticate as (defaults to the current local username)        
-        password (str)          : Used for password authentication; is also used for private key decryption if passphrase is not given.
-        scratch                 : Path to remote scratch directory
+        remote_server (list)    : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
         wrkDir (str)            : Working directory extension
         localPath (str)         : Path to local file/directory
         abqCommand (str)        : Abaqus command to execute and run script
@@ -1074,15 +1113,14 @@ def HemisphereSimulation(host, port, username, password, scratch, wrkDir, localP
         elasticProperties (arr) : Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]
         
     Keyword Args:
+        ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
         Submission ('serial'/ 'paralell') : Type of submission, submit pararlell scripts or single serial script for scan locations {Default: 'serial'}
         Main (bool)        : If false skip preprocessing step of simulation {Default: True}
         SurfacePlot (bool) : If false skip surface plot of biomolecule and scan positions {Default: True}
         Queue (bool)       : If false skip queue completion step of simulation {Default: True}
         Analysis (bool)    : If false skip odb analysis step of simulation {Default: True}
         Retrieval (bool)   : If false skip data file retrivial from remote serve {Default: True}
-        Compile(int)       : If passed, simulation data is compiled from seperate sets of simulations in directory in remote server to combine 
-                                complete indentations. Value is set as int representing the range of directories to compile from (directories must have 
-                                same root naming convention with int denoting individual directories)                     : 
+        Compile(int)       : If passed, simulation data is compiled from seperate sets of simulations in directory in remote server to combine complete indentations. Value is set as int representing the range of directories to compile from (directories must have same root naming convention with int denoting individual directories)                     : 
         Postprocess (bool) : If false skip postprocessing step to produce AFM image from data {Default: True}
         DataPlot (bool)    : If false skip scatter plot of simulation data {Default: True}
         Symmetric          : If false skip postprocessing step to produce AFM image from data {Default: True}
@@ -1100,7 +1138,6 @@ def HemisphereSimulation(host, port, username, password, scratch, wrkDir, localP
         E_hertz (arr)      : Array of fitted elastic modulus value over scan positions for each indentor [Ni,Nb]
         F (arr)            : Array of interpolated force values over xz grid for all indentors and reference force [Ni, Nb, Nz] 
     '''
-    
     # Set intial time
     T0 = time.time()
         
@@ -1119,11 +1156,6 @@ def HemisphereSimulation(host, port, username, password, scratch, wrkDir, localP
 
             tipDims = TipStructure(rIndentor, theta_degrees, tip_length)
             rackPos = ScanGeometry(indentorType, tipDims, baseDims, rSurface, Nb, clearance)
-
-            # Option plot for scan positions for visualisation
-            if 'SurfacePlot' in kwargs.keys() and kwargs['SurfacePlot'] == rIndentor:
-                SurfacePlot(rackPos, Nb, baseDims, tipDims, rSurface, binSize, clearance)
-
                 
             #  -------------------------------------------Export Variable-----------------------------------------------------
             # Set list of simulation variables and export to current directory
@@ -1132,12 +1164,12 @@ def HemisphereSimulation(host, port, username, password, scratch, wrkDir, localP
 
             
             #  -------------------------------------------Remote Submission---------------------------------------------------
-            remotePath = scratch + wrkDir +'/IndenterRadius'+str(int(rIndentor))
+            remotePath = wrkDir +'/IndenterRadius'+str(int(rIndentor))
 
             abqfiles = ('AFMtestRasterScan.py','AFMtestODBAnalysis.py')
             csvfiles = ( "rackPos.csv", "variables.csv","baseDims.csv", "tipDims.csv", "indentorType.txt", "elasticProperties.csv" )
 
-            RemoteSubmission(host, port, username, password, remotePath, localPath,  csvfiles, abqfiles, abqCommand, fileName, subData, rackPos, **kwargs)
+            RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, abqCommand, fileName, subData, rackPos, **kwargs)
    
         t1 = time.time()
         print('Main Submission Complete - ' + str(timedelta(seconds=t1-t0)) + '\n' )     
@@ -1149,7 +1181,7 @@ def HemisphereSimulation(host, port, username, password, scratch, wrkDir, localP
         print('Simulations Processing ...')
 
         # Wait for completion when queue is empty
-        QueueCompletion(host, port, username, password)
+        QueueCompletion(remote_server)
 
         t1 = time.time()
         print('ABAQUS Simulation Complete - '+ str(timedelta(seconds=t1-t0)) + '\n')
@@ -1167,9 +1199,9 @@ def HemisphereSimulation(host, port, username, password, scratch, wrkDir, localP
             
             # ODB analysis script to run, extracts data from simulation and sets it in csv file on server
             script     = 'AFMtestODBAnalysis.py'
-            remotePath = scratch + wrkDir + '/IndenterRadius'+str(int(rIndentor))
+            remotePath = wrkDir + '/IndenterRadius'+str(int(rIndentor))
             
-            RemoteCommand(host, port, username, password, script, remotePath, abqCommand)
+            RemoteCommand(remote_server, script, remotePath, abqCommand)
         
         t1 = time.time()
         print('ODB Analysis Complete - ' + str(timedelta(seconds=t1-t0)) + '\n')
@@ -1184,13 +1216,13 @@ def HemisphereSimulation(host, port, username, password, scratch, wrkDir, localP
         dataFiles = ('U2_Results.csv','RF_Results.csv', 'rackPos.csv')
         csvfiles  = ( "rackPos.csv", "variables.csv","baseDims.csv", "tipDims.csv")
 
-        variables, TotalU2, TotalRF, NrackPos = DataRetrieval(host, port, username, password, scratch, wrkDir, localPath, csvfiles, dataFiles, indentorRadius, **kwargs)
+        variables, TotalU2, TotalRF, NrackPos = DataRetrieval(remote_server, wrkDir, localPath, csvfiles, dataFiles, indentorRadius, **kwargs)
 
         # Export simulation data so it is saved in current directory for future use (save as a 2d array instead of 3d)
-        np.savetxt("variables.csv", variables, fmt='%s', delimiter=",")
-        np.savetxt("TotalU2.csv", TotalU2.reshape(TotalU2.shape[0], -1), fmt='%s', delimiter=",")
-        np.savetxt("TotalRF.csv", TotalRF.reshape(TotalRF.shape[0], -1), fmt='%s', delimiter=",")
-        np.savetxt("NrackPos.csv", NrackPos.reshape(NrackPos.shape[0], -1), fmt='%s', delimiter=",")
+        np.savetxt("data"+os.sep+"variables.csv", variables, fmt='%s', delimiter=",")
+        np.savetxt("data"+os.sep+"TotalU2.csv", TotalU2.reshape(TotalU2.shape[0], -1), fmt='%s', delimiter=",")
+        np.savetxt("data"+os.sep+"TotalRF.csv", TotalRF.reshape(TotalRF.shape[0], -1), fmt='%s', delimiter=",")
+        np.savetxt("data"+os.sep+"NrackPos.csv", NrackPos.reshape(NrackPos.shape[0], -1), fmt='%s', delimiter=",")
 
         t1 = time.time()
         print('File Retrevial Complete' + '\n')  
@@ -1209,9 +1241,9 @@ def HemisphereSimulation(host, port, username, password, scratch, wrkDir, localP
             Nb, Nt= int(baseDims[0]/binSize)+1, int(timePeriod/ timeInterval)+1
             
             # Load saved simulation data and reshape as data sved as 2d array,  true shape is 3d
-            TotalU2  = np.array(np.loadtxt('TotalU2.csv', delimiter=",")).reshape(len(indentorRadius), Nb, Nt)
-            TotalRF  = np.array(np.loadtxt('TotalRF.csv', delimiter=",")).reshape(len(indentorRadius), Nb, Nt)    
-            NrackPos = np.array(np.loadtxt('NrackPos.csv', delimiter=",")).reshape(len(indentorRadius), Nb, 2)  
+            TotalU2  = np.array(np.loadtxt("data"+os.sep+'TotalU2.csv', delimiter=",")).reshape(len(indentorRadius), Nb, Nt)
+            TotalRF  = np.array(np.loadtxt("data"+os.sep+'TotalRF.csv', delimiter=",")).reshape(len(indentorRadius), Nb, Nt)    
+            NrackPos = np.array(np.loadtxt("data"+os.sep+'NrackPos.csv', delimiter=",")).reshape(len(indentorRadius), Nb, 2)  
 
         # If file missing prompt user to import/ produce files 
         except:
@@ -1220,8 +1252,8 @@ def HemisphereSimulation(host, port, username, password, scratch, wrkDir, localP
         
         #  ---------------------------------------------------- Data-Processing---------------------------------------------------     
         # Visualise data if set in kwargs
-        if 'DataPlot' in kwargs.keys() and kwargs['DataPlot'] == True:
-            n = 0
+        if 'DataPlot' in kwargs.keys(): 
+            n =  kwargs['DataPlot']
             DataPlot(NrackPos, TotalU2, TotalRF, Nb, Nt, n)
               
         # Process simulation data to produce heat map, analyse force contours, full width half maximum, volume and youngs modulus
@@ -1383,7 +1415,7 @@ def ContourPlotMan(X, Z, forceGrid, forceContour, indentorRadius, clearance, rSu
     rIndentor, theta, tip_length, r_int, z_int, r_top, z_top = tipDims
 
     # Raster scan grid positions for spherical and capped tip 
-    rackPosCone = ScanGeometry('Capped', tipDims, baseDims, Nb, clearance)/rSurface
+    rackPosCone = ScanGeometry('Capped', tipDims, baseDims, rSurface, Nb, clearance)/rSurface
 
     # Set index for scan position to plot tip at
     i, j = int(Nb/2), -6
@@ -1464,8 +1496,8 @@ def SurfacePlot(rackPos, Nb, baseDims, tipDims, rSurface, binSize, clearance):
     Nb = int(baseDims[0]/binSize)+1
     
     # Raster scan grid positions for spherical and capped tip 
-    rackPosSphere = ScanGeometry('Spherical', tipDims, baseDims, Nb, clearance)
-    rackPosCone = ScanGeometry('Capped', tipDims, baseDims, Nb, clearance)
+    rackPosSphere = ScanGeometry('Spherical', tipDims, baseDims, rSurface, Nb, clearance)
+    rackPosCone = ScanGeometry('Capped', tipDims, baseDims, rSurface, Nb, clearance)
 
     # Set index for scan position to plot tip at
     i, j = int(Nb/2), -6
@@ -1924,7 +1956,7 @@ def LineContourPlot(X, forceContour, refForces, rSurface, tipDims, elasticProper
 
     # --------------------------------------------Plot color bar -----------------------------------------------------------
     # plt.legend( frameon=False) 
-    cbar = plt.colorbar(plt.cm.ScalarMappable(cmap=cmap, norm=normalizer), fraction=0.0315, pad=0.02)
+    cbar = plt.colorbar(plt.cm.ScalarMappable(cmap=cmap, norm=normalizer), ax=ax, fraction=0.0315, pad=0.02)
     cbar.set_label(r'$\frac{F}{E*R^2}$', rotation=0)
     cbar.set_ticks(np.round(10*np.array([0, maxRF*0.25**(1/0.45), maxRF*0.75**(1/0.45), maxRF]))/10)
     cbar.ax.yaxis.set_label_coords(4, 0.6)
