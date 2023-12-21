@@ -892,11 +892,11 @@ def RemoteFTPFiles(remote_server, files, remotePath, localPath, **kwargs):
 def Remote_Terminal(remote_server, **kwargs):
     ''' Function to emulate cluster terminal. 
     
-    Channel is opened and commands given are executed. The command’s input and output streams are returned as Python file-like objects representing  
+    Channel is opened and commands given are executed. The commands input and output streams are returned as Python file-like objects representing  
     stdin, stdout, and stderr.
     
     Args:
-        remote_server (list) - Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
                 
     Keywords Args:
         ProxyJump (proxy_server)  : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
