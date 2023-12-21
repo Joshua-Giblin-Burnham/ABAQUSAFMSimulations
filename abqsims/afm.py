@@ -625,14 +625,14 @@ def SSHconnect(remote_server, **kwargs):
     A new Channel is opened and allows requested command to be executed in other functions. The function allows for ProxyJumpp/Port Forwarding/SSH Tunelling.
 
     Args:
-        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey]
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
                                 host (str)       : Hostname of the server to connect to
                                 port (int)       : Server port to connect to 
                                 username (str)   : username to authenticate as (defaults to the current local username)        
                                 password (str)   : Used for password authentication, None if ssh-key is used; is also used for private key decryption if passphrase is not given.
                                 sshkey (str)     : Path to private key for keyexchange if password not used, None if not used
     Keywords Args:
-        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
+        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
                                            
     Return: 
         ssh_client (obj) : SHH client object which allows for bash command execution and file transfer.
@@ -678,12 +678,12 @@ def RemoteSCPFiles(remote_server, files, remotePath, **kwargs):
     A new Channel is opened and the files are transfered.The commands input and output streams are returned as Python file-like objects representing stdin, stdout, and stderr.
     
     Args:
-        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey]
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
         files (str/list)     : File or list of file to transfer
         remotePath (str)     : Path to remote file/directory
     
     Keywords Args:
-        ProxyJump (proxy_server)  : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
+        ProxyJump (proxy_server)  : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
     '''
     # SHH to clusters
     ssh_client = SSHconnect(remote_server, **kwargs)
@@ -691,7 +691,7 @@ def RemoteSCPFiles(remote_server, files, remotePath, **kwargs):
 
     # SCPCLient takes a paramiko transport as an argument- Uploading content to remote directory
     scp_client = SCPClient(ssh_client.get_transport())
-    scp_client.put(files, recursive=True, remote_path = remotePath)
+    scp_client.put(["data"+os.sep+file for file in files], recursive=True, remote_path = remotePath)
     scp_client.close()
     
     ssh_client.close()
@@ -706,13 +706,13 @@ def RemoteCommand(remote_server, script, remotePath, command, **kwargs):
     A new Channel is opened and the requested command is executed. The commands input and output streams are returned as Python file-like objects representing stdin, stdout, and stderr.
     
     Args:
-        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey]
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
         script (str)         : Script to run via bash command 
         remotePath (str)     : Path to remote file/directory
         command (str)        : Abaqus command to execute and run script   
                      
     Keywords Args:
-        ProxyJump (proxy_server)  : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
+        ProxyJump (proxy_server)  : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
     '''
     
     ssh_client = SSHconnect(remote_server, **kwargs)
@@ -734,49 +734,42 @@ def BatchSubmission(remote_server, fileName, subData, scanPos, remotePath, **kwa
     ''' Function to create bash script for batch submission of input file, and run them on remote server.
         
     Args:
-        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey]
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
         fileName (str)       : Base File name for abaqus input files
         subData (str)        : Data for submission to serve queue [walltime, memory, cpus]
         scanPos (arr)        : Array of coordinates [x,y] of scan positions to image biomolecule (can be clipped or full) 
         remotePath (str)     : Path to remote file/directory
             
     Keywords Args:
-        ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall. Defines varibles for proxy server in list format [host, port, username, password, sshkey]
+        ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall. Defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
         Submission ('serial'/ 'paralell') : Optional define whether single serial script or seperate paralell submission to queue {Default: 'serial'}  
     '''
+    
     # For paralell mode create bash script to runs for single scan location, then loop used to submit individual scripts for each location which run in paralell
     if 'Submission' in kwargs and kwargs['Submission'] == 'paralell':
-        lines = ['#!/bin/bash -l',
-                 '#$ -S /bin/bash',
-                 '#$ -l h_rt='+ subData[0],
-                 '#$ -l mem=' + subData[1],
-                 '#$ -pe mpi ' + subData[2],
-                 # '#$ -l gpu=2',
-                 '#$ -wd /scratch/scratch/zcapjgi/ABAQUS',
-                 'module load abaqus/2017 ',
-                 'ABAQUS_PARALLELSCRATCH="/scratch/scratch/zcapjgi/ABAQUS" ',
-                 'cd ' + remotePath,
-                 'abaqus interactive cpus=$NSLOTS mp_mode=mpi job=$JOB_NAME input=$JOB_NAME.inp scratch=$ABAQUS_PARALLELSCRATCH resultsformat=odb'
-                ]
+        jobs = 'abaqus interactive cpus=$NSLOTS mp_mode=mpi job=$JOB_NAME input=$JOB_NAME.inp scratch=$ABAQUS_PARALLELSCRATCH resultsformat=odb'
         
     # Otherwise, create script to run serial analysis consecutively with single submission
     else:
         # Create set of submission comands for each scan locations
-        jobs   = ['abaqus interactive cpus=$NSLOTS memory="90%" mp_mode=mpi standard_parallel=all job='+fileName+str(int(i))+' input='+fileName+str(int(i))+'.inp scratch=$ABAQUS_PARALLELSCRATCH' 
-                  for i in range(len(scanPos))]
+        jobs = ['abaqus interactive cpus=$NSLOTS memory="90%" mp_mode=mpi standard_parallel=all job='+fileName+str(int(i))+' input='+fileName+str(int(i))+'.inp scratch=$ABAQUS_PARALLELSCRATCH' 
+                for i in range(len(scanPos))]
+    
+    # Produce preamble to used to set up bash script
+    scratch = remote_server[-1]
+    lines = ['#!/bin/bash -l',
+             '#$ -S /bin/bash',
+             '#$ -l h_rt='+ subData[0],
+             '#$ -l mem=' + subData[1],
+             '#$ -pe mpi '+ subData[2],
+             '#$ -wd '+scratch,
+             'module load abaqus/2017 ',
+             'ABAQUS_PARALLELSCRATCH="'+scratch+'" ',
+             'cd ' + remotePath 
+            ]
         
-        # Produce preamble to used to set up bash script
-        lines = ['#!/bin/bash -l',
-                    '#$ -S /bin/bash',
-                    '#$ -l h_rt='+ subData[0],
-                    '#$ -l mem=' + subData[1],
-                    '#$ -pe mpi ' + subData[2],
-                    '#$ -wd /home/zcapjgi/Scratch/ABAQUS',
-                    'module load abaqus/2017 ',
-                    'ABAQUS_PARALLELSCRATCH="/home/zcapjgi/Scratch/ABAQUS" ',
-                    'cd ' + remotePath ]
-        # Combine to produce total  script
-        lines+=jobs
+    # Combine to produce total  script
+    lines+=jobs
 
     # Create script file in current directory by writing each line to file
     with open('batchScript.sh', 'w', newline = '\n') as f:
@@ -798,7 +791,6 @@ def BatchSubmission(remote_server, fileName, subData, scanPos, remotePath, **kwa
         for i in range(len(scanPos)):
             # Job name set as each input file name as -N jobname is used as input variable in script
             jobName = fileName+str(int(i))
-            
             # Command to run individual jobs
             batchCommand = 'cd ' + remotePath + ' \n qsub -N '+ jobName +' batchScript.sh \n'
 
@@ -829,10 +821,10 @@ def QueueCompletion(remote_server, **kwargs):
     '''Function to check queue statis and complete when queue is empty.
 
     Args:
-        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey]
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
                        
     Keywords Args:
-        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
+        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
     '''
     # Log time
     t0 = time.time()
@@ -872,13 +864,13 @@ def RemoteFTPFiles(remote_server, files, remotePath, localPath, **kwargs):
     A new Channel is opened and the files are transfered. The function uses FTP file transfer.
     
     Args:
-        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey]
+        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
         files (str )         : File to transfer
         remotePath (str)     : Path to remote file/directory
         localPath (str)      : Path to local file/directory
 
     Keywords Args:
-        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
+        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
     '''
     # SSH to cluster
     ssh_client = SSHconnect(remote_server, **kwargs)
@@ -901,10 +893,10 @@ def Remote_Terminal(remote_server, **kwargs):
     stdin, stdout, and stderr.
     
     Args:
-        remote_server (list) - Contains varibles for remote server in list format [host, port, username, password, sshkey]
+        remote_server (list) - Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
                 
     Keywords Args:
-        ProxyJump (proxy_server)  : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
+        ProxyJump (proxy_server)  : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
     '''
     
     # SHH to cluster
@@ -964,7 +956,7 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
     completed can be skipped.
     
     Args:
-        remote_server (list)    : Contains varibles for remote server in list format [host, port, username, password, sshkey]
+        remote_server (list)    : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
         remotePath (str)        : Path to remote file/directory
         localPath (str)         : Path to local file/directory
         csvfiles (list)         : List of csv and txt files to transfer to remote server
@@ -975,7 +967,7 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
         clipped_scanPos (arr)   : Array of clipped (containing only positions where tip and molecule interact) scan positions and  initial heights [x,y,z] 
                                     to image biomolecule    
     Keywords Args:
-        ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
+        ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
         submission ('serial'/ 'paralell') : Type of submission, submit pararlell scripts or single serial script for scan locations {Default: 'serial'}
         Transfer (bool)                   : If false skip file transfer step of simulation {Default: True}
         Part (bool)                       : If false skip part creation step of simulation {Default: True}
@@ -1458,7 +1450,7 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
     User inputs all variables and all results are outputted. The user gets a optionally get a surface plot of scan positions. Produces a heatmap of the AFM image, and 3D plots of the sample surface for given force threshold.
     
     Args:
-        remote_server (list)   : Contains varibles for remote server in list format [host, port, username, password, sshkey]
+        remote_server (list)   : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
                                     host (str)     : Hostname of the server to connect to
                                     port (int)     : Server port to connect to 
                                     username (str) : Username to authenticate as (defaults to the current local username)
@@ -1489,7 +1481,7 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
         timeInterval(float)    : Time steps data sampled over for ABAQUS simulation/ time step (dt)
         
     Keywords Args:
-        ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey]
+        ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
         Submission ('serial'/ 'paralell') : Type of submission, submit pararlell scripts or single serial script for scan locations {Default: 'serial'}
         CustomPDB            : Extract data from local custom pd as opposed to from PDB online
         Preprocess (bool)    : If false skip preprocessing step of simulation {Default: True}
