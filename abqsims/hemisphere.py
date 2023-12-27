@@ -1077,7 +1077,7 @@ def Postprocessing(TotalU2, TotalRF, NrackPos, Nb, Nt, courseGrain, refForces, i
 # Final simulation function
 
 # %%
-def  AFMSimulation(remote_server, wrkDir, localPath, abqCommand, fileName, subData, 
+def  HemisphereSimulation(remote_server, wrkDir, localPath, abqCommand, fileName, subData, 
                   indentorType, indentorRadius, theta_degrees, tip_length, indentionDepths, baseDims, rSurface, 
                   refForces, courseGrain, binSize, clearance, meshSurface, meshIndentor, timePeriod, timeInterval, 
                   elasticProperties, **kwargs):
