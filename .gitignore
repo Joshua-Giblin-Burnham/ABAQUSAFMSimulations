@@ -19,6 +19,7 @@ __pycache__/
 # Distribution / packaging
 obsolete/
 data/
+experimental-data
 ssh/
 .Python
 build/
