@@ -744,7 +744,7 @@ def ForceGrid2D(X, Z, U2, RF, rackPos, courseGrain, **kwargs):
         courseGrain (float) : Width of bins that subdivid xz domain of raster scanning/ spacing of the positions sampled over
 
     Keyword Args:
-        Symmetric: If false skip postprocessing step to produce AFM image from data {Default: True}
+        Symmetric: If false skip postprocessing step to ensure AFM image is symmetric about z-axis, instead produce image from raw data {Default: True}
     
     Returns:
         forceGrid (arr)        : 2D Array of force heatmap over xz domain of scan i.e. grid of xz positions with associated force [Nx,Nz] 
@@ -811,7 +811,7 @@ def ForceContour2D(U2, RF, rackPos, forceRef, **kwargs):
         forceRef (float) : Threshold force to evaluate indentation contours at (pN)
         
     Keyword Args:
-        Symmetric: If false skip postprocessing step to produce AFM image from data {Default: True}
+        Symmetric: If false skip postprocessing step to ensure AFM image is symmetric about z-axis, instead produce image from raw data {Default: True}
             
     Returns:
         forceContour (arr)     : 2D Array of coordinates for contours of constant force given by reference force across scan positons 
@@ -1123,7 +1123,7 @@ def  HemisphereSimulation(remote_server, wrkDir, localPath, abqCommand, fileName
         Compile(int)       : If passed, simulation data is compiled from seperate sets of simulations in directory in remote server to combine complete indentations. Value is set as int representing the range of directories to compile from (directories must have same root naming convention with int denoting individual directories)                     : 
         Postprocess (bool) : If false skip postprocessing step to produce AFM image from data {Default: True}
         DataPlot (bool)    : If false skip scatter plot of simulation data {Default: True}
-        Symmetric          : If false skip postprocessing step to produce AFM image from data {Default: True}
+        Symmetric          : If false skip postprocessing step to ensure AFM image is symmetric about z-axis, instead produce image from raw data {Default: True}
             
     Returns:
         X (arr)            : 1D array of postions over x domain of scan positions, discretised into bins of courseGrain value [Nx]
