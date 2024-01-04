@@ -515,7 +515,7 @@ def DotPlot(atom_coord, atom_radius, atom_element, scanPos, clipped_scanPos, pdb
     ax1.view_init(50, 145)    
 
     # Optionally save image
-    if 'SaveImages' in kwargs.keys():
+    if  'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
         fig1.savefig(kwargs['SaveImages'] + os.sep + 'AFMSimulationScanPos-'+pdb+'1.png', bbox_inches = 'tight', pad_inches=0.5) # change to backslash for mac/google colab
     
     plt.show()
@@ -530,7 +530,7 @@ def DotPlot(atom_coord, atom_radius, atom_element, scanPos, clipped_scanPos, pdb
     ax2.set_zlabel(r'z (${\AA}$)')
     ax2.view_init(90, 0)
     # Optionally save image
-    if 'SaveImages' in kwargs.keys():
+    if   'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False and kwargs['SaveImages'] != False:
         fig2.savefig(kwargs['SaveImages'] + os.sep + 'AFMSimulationScanPos-'+pdb+'2.png', bbox_inches = 'tight', pad_inches=0.5) # change to backslash for mac/google colab
     plt.show()
 
@@ -1338,7 +1338,7 @@ def ContourPlot(X, Y, Z, ErrorMask, baseDims, binSize, forceRef, contrast, pdb, 
     cbar.set_label(r'z (${\AA}$)')
     
     # Optionally save image
-    if 'SaveImages' in kwargs.keys():
+    if  'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
         fig.savefig(kwargs['SaveImages'] + os.sep + 'AFMSimulationMolecule-'+pdb+'.png', bbox_inches = 'tight') # change to backslash for mac/google colab
     
     plt.show()
@@ -1436,7 +1436,7 @@ def HardSphereAFM(scanPos, baseDims, binSize, clearance, contrast,  pdb, **kwarg
     cbar.set_label(r'z (${\AA}$)')
     
     # Optionally save image
-    if 'SaveImages' in kwargs.keys():
+    if  'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
         fig.savefig(kwargs['SaveImages'] + os.sep + 'AFMSimulationMolecule-'+pdb+'.png', bbox_inches = 'tight') # change to backslash for mac/google colab
         
     plt.show()
@@ -1488,27 +1488,31 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
         timePeriod(float)      : Total time length for ABAQUS simulation/ time step (T)
         timeInterval(float)    : Time steps data sampled over for ABAQUS simulation/ time step (dt)
     \n    
-    Keywords Args:
-        ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
-        Submission ('serial'/ 'paralell') : Type of submission, submit pararlell scripts or single serial script for scan locations {Default: 'serial'}
-        CustomPDB            : Extract data from local custom pd as opposed to from PDB online
-        Preprocess (bool)    : If false skip preprocessing step of simulation {Default: True}
-        DotPlot (bool)       : If false skip surface plot of biomolecule and scan positions {Default: False}
-        HSPlot (bool)        : If false skip Hard Sphere AFM plot of biomolecule {Default: False}
-        MoleculeView(bool)   : If false skip interactive sphere model of biomolecule {Default: False}
-        Transfer (bool)      : If false skip file transfer step of simulation {Default: True}
-        Part (bool)          : If false skip part creation step of simulation {Default: True}
-        Input (bool)         : If false skip input file creation step of simulation {Default: True}
-        Batch (bool)         : If false skip batch submission step of simulation {Default: True}
-        Queue (bool)         : If false skip queue completion step of simulation {Default: True}
-        Analysis (bool)      : If false skip odb analysis step of simulation {Default: True}
-        Retrieval (bool)     : If false skip data file retrivial from remote serve {Default: True}
-        Postprocess (bool)   : If false skip postprocessing step to produce AFM image from data {Default: True}
-        DataPlot (bool)      : If false skip scatter plot of simulation data {Default: True} 
-        ReturnData (bool)    : If true returns simulation data to analysis {Default: False} 
-        Noise (list)         : If listed adds noise to AFM images [strength, mean, standard deviation]
-        imagePadding (float) : Black space / padding around image as percentage of dimensions of molecule extent
-        SaveImages (str)     : If Contour images to be saved include kwarg specifying the file path to folder       
+    Keywords Args:        
+        Preprocess (bool)        : If false skip preprocessing step of simulation {Default: True}
+        CustomPDB                : Extract data from local custom pd as opposed to from PDB online
+ 
+        Submission (str)         : Type of submission, whether submit pararlell scripts or single serial script for scan locations. Set submission as 'serial'/ 'paralell' or False if no submisson {Default:'serial'}
+        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
+        Transfer (bool)          : If false skip file transfer step of simulation {Default: True}
+        Part (bool)              : If false skip part creation step of simulation {Default: True}
+        Input (bool)             : If false skip input file creation step of simulation {Default: True}
+        Batch (bool)             : If false skip batch submission step of simulation {Default: True}
+        Queue (bool)             : If false skip queue completion step of simulation {Default: True}
+        Analysis (bool)          : If false skip odb analysis step of simulation {Default: True}
+        Retrieval (bool)         : If false skip data file retrivial from remote serve {Default: True}
+
+        Postprocess (bool)       : If false skip postprocessing step to produce AFM image from data {Default: True}
+        ReturnData (bool)        : If true returns simulation data to analysis {Default: False} 
+
+        DotPlot (bool)           : If false skip surface plot of biomolecule and scan positions {Default: False}
+        HSPlot (bool)            : If false skip Hard Sphere AFM plot of biomolecule {Default: False}
+        MoleculeView(bool)       : If false skip interactive sphere model of biomolecule {Default: False}
+        DataPlot (bool)          : If false skip scatter plot of simulation data {Default: False} 
+
+        Noise (list)             : If listed adds noise to AFM images [strength, mean, standard deviation]
+        imagePadding (float)     : Black space / padding around image as percentage of dimensions of molecule extent
+        SaveImages (str)         : Set if Contour images to be saved include kwarg specifying the file path to folder {Default: False}        
     \n        
     Returns:          
         U2 (arr)        : Array of indentors z displacement over scan position
