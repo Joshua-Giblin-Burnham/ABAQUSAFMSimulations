@@ -939,23 +939,42 @@ def ForceInterpolation(Xgrid, Zgrid, U2, RF, rackPos, rIndentor, elasticProperti
         elasticProperties (arr) : Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]
         Nt (int)                : Number of time steps
 
-    Returns:
-        E_hertz (arr) : Array of fitted elastic modulus value over scan positions for each indentor [Ni,Nb]
-        F (arr)       : Array of interpolated force values over xz grid for all indentors and reference force [Ni, Nb, Nz] 
+    Return:
+        E_hertz (arr)   : Array of fitted elastic modulus for an indentation force value over each scan positions [Nb,Nt]
+        E_contour (arr) : Array of fitted elastic modulus (upto clipped force) across the contour of the sample [Nb]
+        F (arr)         : Array of interpolated force values over xz grid for an indentors and reference force [Nb, Nz]  
     '''
     # Initialise array to hold elastic modulus
-    E_hertz = np.zeros([len(rackPos), Nt])
+    Nb = len(rackPos)
+    E_hertz   = np.zeros([Nb, Nt])
+    E_contour = np.zeros(Nb)
+
 
     # Fit Hertz equation to force/indentation for each x scan positon, use lambda function to pass constant parameters(rIndentor/ elasticProperties )
     for i, value in enumerate(rackPos):
-        for n in range(1, Nt):
-            u2, rf     = abs(U2[i,:n]), abs(RF[i,:n])
+        for t in range(1, Nt):
+            u2, rf     = abs(U2[i,:t]), abs(RF[i,:t])
             popt, pcov    = curve_fit(lambda x, E: F_Hertz(x, E, rIndentor, elasticProperties), u2, rf)
 
-
             # Produce array of fitted elastic modulus over scan positions for each indentor
-            E_hertz[i,n]  = popt
+            E_hertz[i,t]  = popt
 
+    forceRef = np.max(RF,axis=1) 
+    forceRef = forceRef[forceRef>0].min()
+   
+    # Find E across scan positions all to same depth -  loop over X  positions
+    for i in range(Nb):
+
+        # If maximum at this position is greater than Reference force
+        if np.max(RF[i]) >= forceRef:
+            
+            # Return index at which force is greater than force threshold
+            j = [ k for k,v in enumerate(RF[i]) if v >= forceRef][0]   
+            
+            # Store corrsponding E value for the index
+            E_contour[i] = E_hertz[i,j] 
+                        
+    
     # Use Elastic modulus over scan position to produce continous spline
     ESpline = UnivariateSpline(rackPos[:,0],  E_hertz[:,-1], s=2)
     
@@ -970,7 +989,7 @@ def ForceInterpolation(Xgrid, Zgrid, U2, RF, rackPos, rIndentor, elasticProperti
     # Use Hertz Eq to interpolate force over xz grid: (Yinit-Ygrid) gives indentation depths over grid
     F = F_Hertz(Zinit - Zgrid, E, rIndentor, elasticProperties)
     
-    return F, E_hertz
+    return F, E_hertz, E_contour
 
 # %% [markdown]
 # #### Fourier, FWHM and Volume
@@ -1055,7 +1074,7 @@ def FWHM_Volume_Fourier(forceContour, NrackPos, X0, Nf, Ni, Nmax, indentorRadius
 # #### Postprocessing
 
 # %%
-def Postprocessing(TotalU2, TotalRF, NrackPos, Nb, Nt, Nmax, courseGrain, refForces, indentorRadius, waveDims, elasticProperties, **kwargs):
+def Postprocessing(TotalU2, TotalRF, NrackPos, Nb, Nt, Nmax, courseGrain, refForces, indentorRadius, waveDims, elasticProperties):
     '''Calculate a 2D force heatmap produced from simulation over the xz domain.
     
     Args:          
@@ -1079,7 +1098,8 @@ def Postprocessing(TotalU2, TotalRF, NrackPos, Nb, Nt, Nmax, courseGrain, refFor
         FWHM (arr)         : Array of full width half maxima of force contour for corresponding indentor and reference force [Nf,Ni]
         Volume (arr)       : Array of volume under force contour for corresponding indentor and reference force [Nf,Ni]
         A (arr)            : Array of Fourier components for force contour for corresponding indentor and reference force [Nf,Ni,Nb]
-        E_hertz (arr)      : Array of fitted elastic modulus value over scan positions for each indentor [Ni,Nb]
+        E_hertz (arr)      : Array of fitted elastic modulus for each indentation force value over each scan positions for each indentor [Ni,Nb,Nt]
+        E_contour (arr)    : Array of fitted elastic modulus (upto clipped force) across the contour of the sample for each indenter [Ni,Nb]
         F (arr)            : Array of interpolated force values over xz grid for all indentors and reference force [Ni, Nb, Nz] 
     '''
     #  ------------------------------------------Initialise  Variables for force grid------------------------------------------------  
@@ -1113,7 +1133,7 @@ def Postprocessing(TotalU2, TotalRF, NrackPos, Nb, Nt, Nmax, courseGrain, refFor
     forceGrid    = np.ma.masked_array(forceGrid, mask=forceGridmask)   
     forceContour = np.ma.masked_array(forceContour, mask=forceContourmask) 
     
- 
+    
     #  --------------------------------------Calculate Hertz fit and interpolate force from the fit---------------------------------
     # Initialise grid arrays over xz domain
     X0 = np.linspace(-waveDims[0]/2, 0, 250)
@@ -1122,11 +1142,12 @@ def Postprocessing(TotalU2, TotalRF, NrackPos, Nb, Nt, Nmax, courseGrain, refFor
     
     # Initialise array holding Fitted Elastic modulus and Interpolated force    
     E_hertz   = np.zeros([Ni,Nb,Nt])
+    E_contour = np.zeros([Ni,Nb])
     F = np.zeros([Ni, len(X0), len(Z0)])
     
     # For each indentor calculate interpolated force heat maps
     for n, rIndentor in enumerate(indentorRadius):
-        F[n], E_hertz[n] = ForceInterpolation(Xgrid, Zgrid, TotalU2[n], TotalRF[n], NrackPos[n], rIndentor, elasticProperties, Nt)
+        F[n], E_hertz[n], E_contour[n] = ForceInterpolation(Xgrid, Zgrid, TotalU2[n], TotalRF[n], NrackPos[n], rIndentor, elasticProperties, Nt)
         
         
    #  ----------------------------------------------Calculate Volume and Fourier-----------------------------------------------------  
@@ -1137,7 +1158,7 @@ def Postprocessing(TotalU2, TotalRF, NrackPos, Nb, Nt, Nmax, courseGrain, refFor
     FWHM   = np.ma.masked_equal(FWHM, 0)            
     Volume = np.ma.masked_equal(Volume, 0)
         
-    return X, Z, forceContour, forceGrid, Volume, FWHM, A, E_hertz, F
+    return X, Z, forceContour, forceGrid, Volume, FWHM, A, E_hertz, E_contour, F
 
 # %% [markdown]
 # ### Simulation Function
@@ -1208,7 +1229,8 @@ def WaveSimulation(remote_server, wrkDir, localPath, abqCommand, fileName, subDa
         FWHM (arr)         : Array of full width half maxima of force contour for corresponding indentor and reference force [Nf,Ni]
         Volume (arr)       : Array of volume under force contour for corresponding indentor and reference force [Nf,Ni]
         A (arr)            : Array of Fourier components for force contour for corresponding indentor and reference force [Nf,Ni,Nb]
-        E_hertz (arr)      : Array of fitted elastic modulus value over scan positions for each indentor [Ni,Nb]
+        E_hertz (arr)      : Array of fitted elastic modulus for each indentation force value over each scan positions for each indentor [Ni,Nb,Nt]
+        E_contour (arr)    : Array of fitted elastic modulus (upto clipped force) across the contour of the sample for each indenter [Ni,Nb]
         F (arr)            : Array of interpolated force values over xz grid for all indentors and reference force [Ni, Nb, Nz] 
     '''
     # Set intial time
@@ -1341,9 +1363,7 @@ def WaveSimulation(remote_server, wrkDir, localPath, abqCommand, fileName, subDa
             DataPlot(NrackPos, TotalU2, TotalRF, Nb, Nt, n)
               
         # Process simulation data to produce heat map, analyse force contours, full width half maximum, volume and youngs modulus
-        X, Z, forceContour, forceGrid, Volume, FWHM, A, E_hertz, F = Postprocessing(TotalU2, TotalRF, NrackPos, Nb, Nt, Nmax, courseGrain, refForces, indentorRadius, 
-                                                                              waveDims, elasticProperties, **kwargs)
-        
+        X, Z, forceContour, forceGrid, Volume, FWHM, A, E_hertz, E_contour, F = Postprocessing(TotalU2, TotalRF, NrackPos, Nb, Nt, Nmax, courseGrain, refForces, indentorRadius, waveDims, elasticProperties)
         t1 = time.time()
         print('Postprocessing Complete' + '\n')
         
@@ -1351,13 +1371,13 @@ def WaveSimulation(remote_server, wrkDir, localPath, abqCommand, fileName, subDa
         # Return final time of simulation and variables
         T1 = time.time()
         print('Simulation Complete - ' + str(timedelta(seconds=T1-T0)) )
-        return X, Z, TotalU2, TotalRF, NrackPos, forceContour, forceGrid, Volume, FWHM, A, E_hertz, F
+        return X, Z, TotalU2, TotalRF, NrackPos, forceContour, forceGrid, Volume, FWHM, A, E_hertz, E_contour, F
     
     else:
         # Return final time of simulation
         T1 = time.time()
         print('Simulation Complete - ' + str(timedelta(seconds=T1-T0)) )
-        return None, None, None, None, None, None, None, None, None, None, None, None
+        return None, None, None, None, None, None, None, None, None, None, None, None, None
 
 # %% [markdown]
 # ## Plot Functions
@@ -2185,11 +2205,12 @@ def VolumePlot(Volume, indentorRadius, refForces, waveDims, elasticProperties):
 # ### Youngs Modulus
 
 # %%
-def YoungPlot(E_hertz, TotalRF, indentorRadius, NrackPos, waveDims, elasticProperties, basePos):
+def YoungPlot(E_hertz, E_contour, TotalRF, indentorRadius, NrackPos, waveDims, elasticProperties, basePos):
     '''Function to plot elastic modulus over scan position for each indentor.
     
     Args:          
-        E_hertz (arr)           : Array of fitted elastic modulus value over scan positions for each indentor [Ni,Nb]
+        E_hertz (arr)           : Array of fitted elastic modulus for each indentation force value over each scan positions for each indentor [Ni,Nb,Nt]
+        E_contour (arr)         : Array of fitted elastic modulus (upto clipped force) across the contour of the sample for each indenter [Ni,Nb]
         TotalRF (arr)           : Array of reaction force in time on indentor reference point over scan position  and for all indenter [Ni, Nb, Nt]
         indentorRadius (arr)    : Array of indentor radii of spherical tip portion varied for seperate  simulations
         NrackPos (arr)          : Array of initial scan positions for each indenter [Ni, Nb, [x, z]] 
@@ -2206,8 +2227,9 @@ def YoungPlot(E_hertz, TotalRF, indentorRadius, NrackPos, waveDims, elasticPrope
     fig, ax = plt.subplots(1, 1, figsize = (linewidth/2, 1/1.61*linewidth/2) )
     for n, rIndentor in enumerate(indentorRadius):
         # Plot for each indentor variation of elastic modulus over scan positions
-        ax.plot(-NrackPos[n,:,0]/waveDims[0], np.ma.masked_less(E_hertz[n,:,-1], 0)[::-1]/E_true,  lw = 1, label = r'$R/\lambda$='+ str(rIndentor/waveDims[0]))
-    
+        plot = ax.plot(-NrackPos[n,:,0]/waveDims[0], E_contour[n][::-1]/E_true,  lw = 1, label = r'$R/\lambda$='+ str(rIndentor/waveDims[0])) 
+        # ax.plot(-NrackPos[n,:,0]/waveDims[0], np.ma.masked_less(E_hertz[n,:,-1], 0)[::-1]/E_true, ':', color = plot[0].get_color(), lw = 1, label = r'$R/\lambda$='+ str(rIndentor/waveDims[0]))
+
     # Expected elastic modulus value
     ax.plot(-NrackPos[0,:,0]/waveDims[0], NrackPos[1,:,0]**0, ':', color = 'k', lw = 1)
     
