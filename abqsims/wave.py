@@ -356,6 +356,7 @@ def RemoteSCPFiles(remote_server, files, remotePath, **kwargs):
     
     Keywords Args:
         ProxyJump (proxy_server)  : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
+        path                      : Path to data files
     '''
     # SHH to clusters
     ssh_client = SSHconnect(remote_server, **kwargs)
@@ -363,7 +364,12 @@ def RemoteSCPFiles(remote_server, files, remotePath, **kwargs):
 
     # SCPCLient takes a paramiko transport as an argument- Uploading content to remote directory
     scp_client = SCPClient(ssh_client.get_transport())
-    scp_client.put(["data"+os.sep+file for file in files], recursive=True, remote_path = remotePath)
+
+    if 'path' in kwargs and isinstance(kwargs['path'], str):
+        scp_client.put([kwargs['path']+os.sep+file for file in files], recursive=True, remote_path = remotePath)
+    else:
+        scp_client.put(files, recursive=True, remote_path = remotePath)
+        
     scp_client.close()
     
     ssh_client.close()
@@ -629,7 +635,7 @@ def RemoteSubmission(remote_server, remotePath,  csvfiles, abqfiles, abqCommand,
     '''
     #  ---------------------------------------------File Transfer----------------------------------------------------------       
     # Transfer scripts and variable files to remote server
-    RemoteSCPFiles(remote_server, csvfiles, remotePath, **kwargs)
+    RemoteSCPFiles(remote_server, csvfiles, remotePath, path = 'data', **kwargs)
     RemoteSCPFiles(remote_server, abqfiles, remotePath, **kwargs)
 
     print('File Transfer Complete')
