@@ -1,4 +1,4 @@
-abqsims package
+Packages
 ===============
 
 .. toctree::
