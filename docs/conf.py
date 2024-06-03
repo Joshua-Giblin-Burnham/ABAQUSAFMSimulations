@@ -42,7 +42,6 @@ extensions = ['sphinx_rtd_theme',
               'sphinx_autopackagesummary',
               'sphinx.ext.coverage',
               'sphinx.ext.napoleon',
-              'furo',
               ]
 
 autosummary_generate = True
@@ -70,6 +69,15 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 html_theme = "furo"
 # html_theme = "sphinx_rtd_theme"
+
+html_theme_options = {
+    "dark_css_variables": {
+        "color-brand-primary": "red",
+        "color-brand-content": "#CC3333",
+        "color-admonition-background": "orange",
+    },
+    "navigation_with_keys": True,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
