@@ -185,3 +185,4 @@ webencodings==0.5.1
 websocket-client==1.7.0
 Werkzeug==3.0.1
 widgetsnbextension==4.0.9
+furo==2024.5.6

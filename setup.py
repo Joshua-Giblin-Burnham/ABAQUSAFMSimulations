@@ -33,7 +33,7 @@ setup(
 
     # List of dependencies
     install_requires = ["numpy", "matplotlib", "scipy", "absl-py","biopython","keras","mendeleev",
-                        "nglview","py3dmol","pyabaqus","pypdf","pypdf2","scp","paramiko","sphinx_rtd_theme"],
+                        "nglview","py3dmol","pyabaqus","pypdf","pypdf2","scp","paramiko","sphinx_rtd_theme","furo",],
 
     extras_require={
         'docs': [
@@ -42,10 +42,11 @@ setup(
             # Nice theme for docs
             'sphinx_rtd_theme',
             'sphinx_autopackagesummary',
+            'furo',
         ],
         'dev': [
             # Flake8 for code style checking
             'flake8>=3',
         ],
-    },
-)
+    }
+    )

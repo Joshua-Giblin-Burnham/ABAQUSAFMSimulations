@@ -25,8 +25,10 @@ from numpy import random
 from random import randrange
 
 # Interpolation/ Fittting modules
-from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import UnivariateSpline #, RegularGridInterpolator, RectBivariateSpline, LinearNDInterpolator, interpn
 from scipy.optimize import curve_fit
+from scipy.signal import convolve2d  
+from scipy import stats
 
 # Plotting import and settinngs
 import matplotlib as mpl
@@ -563,7 +565,7 @@ def DotPlot(atom_coord, atom_radius, atom_element, scanPos, clipped_scanPos, pdb
 
 # In[18]:
 
-def ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scanPos, variables, baseDims, tipDims, indentorType, elasticProperties ):
+def ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scanPos, variables, scanDims, baseDims, tipDims, indentorType, elasticProperties ):
     '''Export simulation variables as csv and txt files to load in abaqus python scripts.
     
         Args:
@@ -1219,7 +1221,7 @@ def DataPlot(scanPos, U2, RF, N):
 
 # In[40]:
 
-def ForceContours(U2, RF,forceRef, scanPos, scanDims, binSize):
+def ForceContours(U2, RF,forceRef, scanPos, scanDims, binSize, clearance):
     '''Function to calculate contours/z heights of constant force in simulation data for given threshold force.
     
     Args:
