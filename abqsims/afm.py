@@ -766,15 +766,19 @@ def RemoteCommand(remote_server, script, remotePath, command, **kwargs):
 
 # In[25]:
 
-def BatchSubmission(remote_server, fileName, subData, scanPos, remotePath, **kwargs):
+def BatchSubmission(remote_server, fileName, subData, clipped_scanPos, scanPos, scanDims, binSize, clearance, remotePath, **kwargs):
     ''' Function to create bash script for batch submission of input file, and run them on remote server.
         
     Args:
-        remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
-        fileName (str)       : Base File name for abaqus input files
-        subData (str)        : Data for submission to serve queue [walltime, memory, cpus]
-        scanPos (arr)        : Array of coordinates [x,y] of scan positions to image biomolecule (can be clipped or full) 
-        remotePath (str)     : Path to remote file/directory
+        remote_server (list)  : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
+        fileName (str)        : Base File name for abaqus input files
+        subData (str)         : Data for submission to serve queue [walltime, memory, cpus]
+        clipped_scanPos (arr) : Array of clipped (containing only positions where tip and molecule interact) scan positions and initial heights [x,y,z] to image biomolecule (can be clipped or full) 
+        scanPos (arr)         : Array of coordinates [x,y] of scan positions to image biomolecule 
+        scanDims (arr)        : Geometric parameters for defining scan dimensiond [width, height] 
+        binSize (float)       : Width of bins that subdivid xy domain during raster scanning/ spacing of the positions sampled over
+        clearance(type:float) : Clearance above molecules surface indentor is set to during scan
+        remotePath (str)      : Path to remote file/directory
             
     Keywords Args:
         ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall. Defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
@@ -784,13 +788,38 @@ def BatchSubmission(remote_server, fileName, subData, scanPos, remotePath, **kwa
     # For paralell mode create bash script to runs for single scan location, then loop used to submit individual scripts for each location which run in paralell
     if 'Submission' in kwargs and kwargs['Submission'] == 'paralell':
         jobs = 'abaqus interactive cpus=$NSLOTS mp_mode=mpi job=$JOB_NAME input=$JOB_NAME.inp scratch=$ABAQUS_PARALLELSCRATCH resultsformat=odb'
+
+    # For scanline mode create script to run serial analysis consecutively with single submission of locations along central scanlines
+    elif 'Submission' in kwargs and kwargs['Submission'] == 'scanlines':
+        xNum, yNum = int(scanDims[0]/binSize)+1, int(scanDims[1]/binSize)+1
+        xi, yi = int(xNum/2), int(yNum/2)
+
+        # Create array of indices for grid, extract 2D indices across two scanlines (xi, yi), then map to a 1d array indices and join
+        index_array= np.indices([yNum, xNum])
+        indices = np.sort(np.concatenate((
+            np.ravel_multi_index([index_array[0,yi],index_array[1,yi]],[yNum, xNum]),
+            np.ravel_multi_index([index_array[0,:,xi],index_array[1,:,xi]],[yNum, xNum])  )) )
+        
+        # Loop to remove clipped positions and map indices to clipped ist indices 
+        clipped_indices, j = [], 0  
+        for i in range(len(scanPos)):
+            if scanPos[i,2] != clearance: 
+                # Extract indices for indices 
+                if i in indices:
+                    clipped_indices.append(j) 
+                # Count indices in clipped array
+                j+=1 
+    
+        # Create set of submission comands for each scan locations
+        jobs = ['abaqus interactive cpus=$NSLOTS memory="90%" mp_mode=mpi standard_parallel=all job='+fileName+str(int(i))+' input='+fileName+str(int(i))+'.inp scratch=$ABAQUS_PARALLELSCRATCH' 
+                for i in clipped_indices]
         
     # Otherwise, create script to run serial analysis consecutively with single submission
     else:
         # Create set of submission comands for each scan locations
         jobs = ['abaqus interactive cpus=$NSLOTS memory="90%" mp_mode=mpi standard_parallel=all job='+fileName+str(int(i))+' input='+fileName+str(int(i))+'.inp scratch=$ABAQUS_PARALLELSCRATCH' 
-                for i in range(len(scanPos))]
-    
+                for i in range( len(clipped_scanPos))]
+        
     # Produce preamble to used to set up bash script
     scratch = remote_server[-1]
     lines = ['#!/bin/bash -l',
@@ -987,7 +1016,7 @@ def LocalSubmission():
 
 # In[34]:
 
-def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, abqCommand, fileName, subData, clipped_scanPos, **kwargs):
+def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, abqCommand, fileName, subData,  clipped_scanPos, scanPos, scanDims, binSize, clearance, **kwargs):
     '''Function to run simulation and scripts on the remote servers. 
     
     Files for variables are transfered, ABAQUS scripts are run to create parts and input files. A bash file is created and submitted to run simulation for 
@@ -995,16 +1024,20 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
     completed can be skipped.
     
     Args:
-        remote_server (list)    : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
-        remotePath (str)        : Path to remote file/directory
-        localPath (str)         : Path to local file/directory
-        csvfiles (list)         : List of csv and txt files to transfer to remote server
-        abqfiles (list)         : List of abaqus script files to transfer to remote server
-        abqCommand (str)        : Abaqus command to execute and run script
-        fileName (str)          : Base File name for abaqus input files
-        subData (str)           : Data for submission to serve queue [walltime, memory, cpus]
-        clipped_scanPos (arr)   : Array of clipped (containing only positions where tip and molecule interact) scan positions and  initial heights [x,y,z] to image biomolecule    
-    
+        remote_server (list)  : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
+        remotePath (str)      : Path to remote file/directory
+        localPath (str)       : Path to local file/directory
+        csvfiles (list)       : List of csv and txt files to transfer to remote server
+        abqfiles (list)       : List of abaqus script files to transfer to remote server
+        abqCommand (str)      : Abaqus command to execute and run script
+        fileName (str)        : Base File name for abaqus input files
+        subData (str)         : Data for submission to serve queue [walltime, memory, cpus]
+        clipped_scanPos (arr) : Array of clipped (containing only positions where tip and molecule interact) scan positions and initial heights [x,y,z] to image biomolecule (can be clipped or full) 
+        scanPos (arr)         : Array of coordinates [x,y] of scan positions to image biomolecule 
+        scanDims (arr)        : Geometric parameters for defining scan dimensiond [width, height] 
+        binSize (float)       : Width of bins that subdivid xy domain during raster scanning/ spacing of the positions sampled over
+        clearance(type:float) : Clearance above molecules surface indentor is set to during scan
+
     Keywords Args:
         ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
         Submission ('serial'/ 'paralell') : Type of submission, submit pararlell scripts or single serial script for scan locations {Default: 'serial'}
@@ -1054,7 +1087,7 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
         print('Submitting Batch Scripts ...')
         
         # Submit bash scripts to remote queue to carry out batch abaqus analysis
-        BatchSubmission(remote_server, fileName, subData, clipped_scanPos, remotePath, **kwargs) 
+        BatchSubmission(remote_server, fileName, subData, clipped_scanPos, scanPos, scanDims, binSize, clearance, remotePath, **kwargs) 
         
         t1 = time.time()
         print('Batch Submission Complete - '+ str(timedelta(seconds=t1-t0)) )
@@ -1644,7 +1677,7 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
                     "clipped_scanPos.csv", "scanPos.csv", "scanDims","variables.csv","baseDims.csv", "tipDims.csv", "indentorType.txt", "elasticProperties.csv")
         abqfiles = ('AFMSurfaceModel.py', 'AFMRasterScan.py', 'AFMODBAnalysis.py')
     
-        RemoteSubmission(remote_server, remotePath, localPath, csvfiles, abqfiles, abqCommand, fileName, subData, clipped_scanPos, **kwargs)  
+        RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, abqCommand, fileName, subData,  clipped_scanPos, scanPos, scanDims, binSize, clearance, **kwargs)  
         
         
     #  -------------------------------------------------- Post-Processing--------------------------------------------------------  
