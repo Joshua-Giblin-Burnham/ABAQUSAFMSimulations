@@ -78,9 +78,7 @@ import py3Dmol
 # #### Biomolecule PDB Function
 # Function to imports the relevant PDB file (and takes care of the directory) in which it is saved etc for the user, returning the structure and the view using a widget.
 
-# In[5]:
-
-### Function to get structure from pdb file 4 digit code
+# %%
 def PDB(pdbid, localPath, **kwargs):
     '''This function imports the relevant PDB file. 
     
@@ -109,14 +107,14 @@ def PDB(pdbid, localPath, **kwargs):
     structure_file_folder = str(split_pdbid[1]) + str(split_pdbid[2])
     
     if 'CustomPDB' in kwargs.keys() and kwargs['CustomPDB'] == True:
-        # Retrieving file from the location it is saved in. Set `the_slashes` as '/' for MAC and Google Colab or '//' for Windows
+        # Retrieving file from the location it is saved in. os.sep set `the_slashes` as '/' for MAC and Google Colab or '//' for Windows
         file_loc = localPath + os.sep + pdbid + '.pdb'
         
         # Defining structure i.e. '4 letter PDB ID code' and 'location'
         structure = pdb_parser.get_structure(pdbid, file_loc) 
         
     else:
-        # Retrieving file from the location it is saved in. Set `the_slashes` as '/' for MAC and Google Colab or '//' for Windows
+        # Retrieving file from the location it is saved in. 
         file_loc = localPath + os.sep + structure_file_folder + os.sep + pdbid + '.cif'
         
         # Defining structure i.e. '4 letter PDB ID code' and 'location'
@@ -128,13 +126,12 @@ def PDB(pdbid, localPath, **kwargs):
     
     return(structure, view)
 
-# In[6]:
-    
+
+# %% [markdown]
 # #### Tip Functions
 # Functions to produce list of tip structural parameters, alongside function to calculates and returns tip surface heights from radial  position r.
 
-# In[7]
-
+# %%
 def TipStructure(rIndentor, theta_degrees, tip_length): 
     '''Produce list of tip structural parameters. 
 
@@ -157,9 +154,7 @@ def TipStructure(rIndentor, theta_degrees, tip_length):
     
     return [rIndentor, theta, tip_length, r_int, z_int, r_top, z_top]
 
-
-# In[8]:
-
+# %%
 def Zconical(r, r0, r_int, z_int, theta, R, tip_length):
     '''Calculates and returns spherically capped conical tip surface heights from radial  position r. 
     
@@ -180,14 +175,14 @@ def Zconical(r, r0, r_int, z_int, theta, R, tip_length):
     
     ### Constructing conical and spherical parts boundaries of tip using arrays for computation speed
     # ------------------------------------------------Spherical Boundary------------------------------------------------
-    # For r <= r_int, z <= z_int : (z-z0)^2 +  (r-r0)^2 = R^2 --> z = z0  + ( R^2 - (r-r0)^2 )^1/2   
+    # For r <= r_int, z <= z_int : (z-z0)^2 +  (r-r0)^2 = R^2 --> z = z0  + ( R^2 -(r-r0)^2 )^1/2   
     
     # Using equation of sphere compute height (points outside sphere radius are complex and return nan, 
     # nan_to_num is used to set these points to max value R). The heights are clip to height of tangent point, R-z_int. 
     # Producing spherical portion for r below tangent point r_int and constant height R-zint for r values above r_int.
     
-    z1 = np.clip( np.nan_to_num(R - np.sqrt(R**2 - (r-r0)**2), copy=False, nan=R ), a_min = 0 , a_max = R-abs(z_int))
-    # z1 = np.clip( np.where( np.isnan( R - np.sqrt(R**2 - (r-r0)**2) ) , R, R - np.sqrt(R**2 - (r-r0)**2) ), a_min = 0 , a_max = R-np.abs(z_int))
+    z1 = np.clip( np.nan_to_num(R -np.sqrt(R**2 -(r-r0)**2), copy=False, nan=R ), a_min = 0, a_max = R-abs(z_int))
+    # z1 = np.clip( np.where( np.isnan( R -np.sqrt(R**2 -(r-r0)**2) ) , R, R -np.sqrt(R**2 -(r-r0)**2) ), a_min = 0 , a_max = R-np.abs(z_int))
 
     # -------------------------------------------------Conical Boundary-------------------------------------------------
     # r > r_int, z > z_int : z = m*abs(x-x0);  where x = r, x0 = r0 + r_int,  m = 1/tan(theta)
@@ -206,9 +201,7 @@ def Zconical(r, r0, r_int, z_int, theta, R, tip_length):
     # Z = np.ma.masked_greater(z1+z2, tip_length )
     return Z
 
-
-# In[9]:
-
+# %%
 def Zspherical(r, r0, r_int, z_int, theta, R, tip_length):
     '''Calculates and returns spherical tip surface heights from radial  position r. 
     
@@ -226,24 +219,23 @@ def Zspherical(r, r0, r_int, z_int, theta, R, tip_length):
     Returns:
         Z (float/1D arr) : Height of tip at xy radial coordinate 
     '''
-    # Simple spherical equation: (z-z0)^2 +  (r-r0)^2 = R^2 --> z = z0 - ( R^2 - (r-r0)^2 )^1/2  
-    return ( R - np.sqrt(R**2 - (r-r0)**2) ) 
+    # Simple spherical equation: (z-z0)^2 +  (r-r0)^2 = R^2 --> z = z0- ( R^2- (r-r0)^2 )^1/2  
+    return ( R- np.sqrt(R**2- (r-r0)**2) ) 
 
-# In[10]:
-    
+# %% [markdown]
 # #### Surface Functions
 # Functions to orientate biomolecule, extract atomic positions and elements from structural data and calculate bse/substrate dimensions.
 
-# In[11]:
+# %%
 def Rotate(domain, rotation):
     '''Rotate coordinates of a domain around each coordinate axis by angles given.
 
     Args:
         domain (arr)    : Array of [x,y,z] coordinates in domain to be rotated (Shape: (3) or (N,3) )
         rotation (list) : Array of [xtheta, ytheta, ztheta] rotational angle around coordinate axis:
-                            \ -  xtheta(float): Angle in degrees for rotation around x axis (Row)
-                            \ -  ytheta(float): Angle in degrees for rotation around y axis (Pitch)
-                            \ -  ztheta(float): Angle in degrees for rotation around z axis (Yaw)
+                            \n-  xtheta(float): Angle in degrees for rotation around x axis (Row)
+                            \n-  ytheta(float): Angle in degrees for rotation around y axis (Pitch)
+                            \n-  ztheta(float): Angle in degrees for rotation around z axis (Yaw)
     Returns:
         rotate_domain(arr) : Rotated coordinate array
     '''
@@ -259,9 +251,7 @@ def Rotate(domain, rotation):
     
     return np.array((R*np.asmatrix(domain).T).T)
 
-
-# In[12]:
-    
+# %%
 def MolecularStructure(structure, rotation, tipDims, indentorType, binSize, surfaceApprox):
     '''Extracts molecular data from structure class.
     
@@ -284,14 +274,12 @@ def MolecularStructure(structure, rotation, tipDims, indentorType, binSize, surf
         baseDims (arr)        : Geometric parameters for defining base/ substrate structure [width, height, depth]           
     '''
     
+    
     #  --------------------------------------Setup Molecule Elements---------------------------------------------------
     # Extract atom element list as array
     atom_list  = structure.get_atoms()
     elements = list(fetch_table('elements')['symbol'])    
     atom_element = np.array([atom.element[0] if len(atom.element)==1 else atom.element[0] + atom.element[1:].lower() for atom in atom_list])
-    # atom_element = np.array([atom.element[0] if len(atom.element)==1 else atom.element[0] + atom.element[1:].lower() if len(atom.element)==2 else 'C' for atom in atom_list])
-
-    print(np.array([atom for atom in atom_element if atom not in elements]))
     
     # Produce dictionary of element radii in angstrom (using van de waals or vdw_radius_dreiding vdw_radius_mm3 vdw_radius_uff )
     atom_radius = dict.fromkeys(np.sort(atom_element))
@@ -300,6 +288,7 @@ def MolecularStructure(structure, rotation, tipDims, indentorType, binSize, surf
             atom_radius[atom] = element(atom).vdw_radius_uff/100  
         else:
             atom_radius[atom] = element('C').vdw_radius_uff/100 
+    
     
     #  --------------------------------------Setup Molecule Geometry---------------------------------------------------
     # Extract atom coordinates list as array in angstrom 
@@ -319,9 +308,9 @@ def MolecularStructure(structure, rotation, tipDims, indentorType, binSize, surf
     surfaceWidthZ = abs(surfaceMaxZ-surfaceMinZ)
     
     # Centre molecule geometry in xy and set z=0 at the top of the base with percentage of height not imbedded
-    atom_coord[:,0] = atom_coord[:,0] - surfaceMinX - surfaceWidthX/2
-    atom_coord[:,1] = atom_coord[:,1] - surfaceMinY - surfaceWidthY/2
-    atom_coord[:,2] = atom_coord[:,2] - surfaceMinZ - surfaceWidthZ*surfaceApprox
+    atom_coord[:,0] = atom_coord[:,0] -surfaceMinX -surfaceWidthX/2
+    atom_coord[:,1] = atom_coord[:,1] -surfaceMinY -surfaceWidthY/2
+    atom_coord[:,2] = atom_coord[:,2] -surfaceMinZ -surfaceWidthZ*surfaceApprox
 
     
     #  --------------------------------------Setup Base/Surface Geometry---------------------------------------------------
@@ -341,13 +330,11 @@ def MolecularStructure(structure, rotation, tipDims, indentorType, binSize, surf
         
     return atom_coord, atom_element, atom_radius, surfaceHeight, baseDims
 
-# In[13]:
-    
+# %% [markdown]
 # #### Scan Functions
 # Calculate scan positions of tip over surface and vertical set points above surface for each position. In addition, function to plot and visualise molecules surface and scan position.
 
-# In[14]:
-
+# %%
 def ScanGeometry(atom_coord, atom_radius, atom_element, indentorType, tipDims, baseDims, surfaceHeight, binSize, clearance, **kwargs):
     '''Produces array of scan locations and corresponding heights/ tip positions above surface in Angstroms (x10-10 m). 
     
@@ -372,6 +359,7 @@ def ScanGeometry(atom_coord, atom_radius, atom_element, indentorType, tipDims, b
         clipped_scanPos (arr) : Array of clipped (containing only positions where tip and molecule interact) scan positions and initial heights [x,y,z] to image biomolecule
         scanDims (arr)        : Geometric parameters for defining scan dimensiond [width, height] 
     '''
+
     # Initialise scan dimensions
     if 'ClippedScan' in kwargs and kwargs['ClippedScan'] != False:
         scanDims = np.array([ baseDims[0]*kwargs['ClippedScan'][0],  baseDims[1]*kwargs['ClippedScan'][1] ])
@@ -422,13 +410,16 @@ def ScanGeometry(atom_coord, atom_radius, atom_element, indentorType, tipDims, b
     r = np.linspace(-rBoundary, rBoundary, 50)
     zIndentor = Zstructure(r, 0, r_int, z_int, theta, rIndentor, tip_length) + surfaceHeight
     
+    # Create array dividing/defining scan positions into chunks so only process 1.1e8 elements each loop to optimise data usage 
     N = np.linspace(0, xNum*yNum, int(np.ceil(xNum*yNum*len(atom_coord)/1.1e8)+1), dtype=int)
+
+    # Loop over each chunk on scan positions
     for j in range(len(N)-1):
         
-        # Calculate radial distance from scan position to each atom centre giving array of  [NscanPos, Natoms]
+        # Calculate radial distance from scan position to each atom centre giving array of  [scanPos, Natoms]
         rInteract = np.sqrt( (atom_coord[:,0]-scanPos[N[j]:N[j+1],0,None])**2 + (atom_coord[:,1]-scanPos[N[j]:N[j+1],1,None])**2 ) 
 
-        # Mask atoms outside the indenter boundary for each scan position and produce corresponding element radiujs and z positions array. Compress to remove masked values
+        # Mask atoms outside the indenter boundary for each scan position and produce corresponding element radius and z positions array. Compress to remove masked values
         rInteractMasked = np.ma.masked_greater(rInteract, rBoundary+rElement)
         mask = np.ma.getmask(rInteractMasked) 
         rInteractMasked = [ rInteractMasked[i].compressed() for i in range(N[j+1]-N[j]) ]
@@ -443,9 +434,9 @@ def ScanGeometry(atom_coord, atom_radius, atom_element, indentorType, tipDims, b
         # The initial height corresponds to the maximum value of dz/ min value of dz' where the tip is tangential to the surface. I.e. when dz' is minimised all others dz' tip 
         # positions will be above/ further from the surface. Therefore, at this position, the rest of the indentor wil  not be in contact with the surface and it is tangential.    
 
-        dz = np.array([(zIndentor[:,None] - np.nan_to_num((zAtomMasked[i] + np.sqrt( rElementMasked[i]**2 - (r[:,None]-rInteractMasked[i])**2)), 
+        dz = np.array([(zIndentor[:,None] -np.nan_to_num((zAtomMasked[i] + np.sqrt( rElementMasked[i]**2 -(r[:,None]-rInteractMasked[i])**2)), 
                                                           copy=False, nan=0 )).min(initial=surfaceHeight)   for i in range(N[j+1]-N[j]) ])
-        scanPos[N[j]:N[j+1],2] = surfaceHeight - abs(dz) + clearance 
+        scanPos[N[j]:N[j+1],2] = surfaceHeight -abs(dz) + clearance 
     
     #  ---------------------------------------------Clip Scan position ---------------------------------------------------------    
     # Include only positions where tip interact with the sample. Scan position equal clearance, corresponds to indentor at base height 
@@ -454,8 +445,7 @@ def ScanGeometry(atom_coord, atom_radius, atom_element, indentorType, tipDims, b
             
     return scanPos, clipped_scanPos, scanDims
 
-# In[15]:
-    
+# %%
 def DotPlot(atom_coord, atom_radius, atom_element, scanPos, clipped_scanPos, pdb, **kwargs):
     '''Plot the molecules atoms surfaces and scan positions to visualise and check positions.
     
@@ -468,7 +458,7 @@ def DotPlot(atom_coord, atom_radius, atom_element, scanPos, clipped_scanPos, pdb
         pdb (str)             : PDB (or CSV) file name of desired biomolecule
         
     Keywords Args: 
-        SaveImages (str) : If Contour images to be saved include kwarg specifying the file path to folder
+        SaveImages (str)      : If Contour images to be saved include kwarg specifying the file path to folder
     '''
     # Set range of polar/ azimuthal angles for setting atoms surface positions  
     polar     = np.linspace(-np.pi, np.pi, 16)
@@ -491,9 +481,9 @@ def DotPlot(atom_coord, atom_radius, atom_element, scanPos, clipped_scanPos, pdb
                 R = atom_radius[atom_element[i]]
                 
                 # Calculate surface coordinate using spherical coordinates
-                surfacatomPos[k,0] = x0 - R*np.cos(phi)*np.sin(theta)
-                surfacatomPos[k,1] = y0 - R*np.sin(phi)*np.sin(theta)
-                surfacatomPos[k,2] = z0 - R*np.cos(theta)
+                surfacatomPos[k,0] = x0 -R*np.cos(phi)*np.sin(theta)
+                surfacatomPos[k,1] = y0 -R*np.sin(phi)*np.sin(theta)
+                surfacatomPos[k,2] = z0 -R*np.cos(theta)
     
     
     # Initialise count variables           
@@ -519,9 +509,9 @@ def DotPlot(atom_coord, atom_radius, atom_element, scanPos, clipped_scanPos, pdb
                     x0, y0, z0 = r
 
                     # Calculate surface coordinate using spherical coordinates
-                    clipped_surfacatomPos[k,0] = x0 - R*np.cos(phi)*np.sin(theta)
-                    clipped_surfacatomPos[k,1] = y0 - R*np.sin(phi)*np.sin(theta)
-                    clipped_surfacatomPos[k,2] = z0 - R*np.cos(theta)   
+                    clipped_surfacatomPos[k,0] = x0 -R*np.cos(phi)*np.sin(theta)
+                    clipped_surfacatomPos[k,1] = y0 -R*np.sin(phi)*np.sin(theta)
+                    clipped_surfacatomPos[k,2] = z0 -R*np.cos(theta)   
     
     # Return number of atoms and scan positions
     print('Number of Atoms in Molecuel:', nB)
@@ -537,7 +527,7 @@ def DotPlot(atom_coord, atom_radius, atom_element, scanPos, clipped_scanPos, pdb
     ax1.view_init(50, 145)    
 
     # Optionally save image
-    if  'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
+    if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
         fig1.savefig(kwargs['SaveImages'] + os.sep + 'AFMSimulationScanPos-'+pdb+'1.png', bbox_inches = 'tight', pad_inches=0.5) # change to backslash for mac/google colab
     
     plt.show()
@@ -552,20 +542,19 @@ def DotPlot(atom_coord, atom_radius, atom_element, scanPos, clipped_scanPos, pdb
     ax2.set_zlabel(r'z (${\AA}$)')
     ax2.view_init(90, 0)
     # Optionally save image
-    if   'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False and kwargs['SaveImages'] != False:
+    if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
         fig2.savefig(kwargs['SaveImages'] + os.sep + 'AFMSimulationScanPos-'+pdb+'2.png', bbox_inches = 'tight', pad_inches=0.5) # change to backslash for mac/google colab
     plt.show()
 
-# In[16]:
-    
+# %% [markdown]
 # ### Submission Functions
 
-# In[17]:
+# %% [markdown]
 # #### File Import/ Export 
 
-# In[18]:
+# %%
 
-def ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scanPos, variables, scanDims, baseDims, tipDims, indentorType, elasticProperties ):
+def ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scanPos, scanDims, variables, baseDims, tipDims, indentorType, elasticProperties ):
     '''Export simulation variables as csv and txt files to load in abaqus python scripts.
     
         Args:
@@ -581,7 +570,7 @@ def ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scan
             indentorType (str)     :  String defining indentor type (Spherical or Capped)
             elasticProperties(arr) :  Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]
     '''
-    
+
     ### Creating a folder on the Users system
     os.makedirs('data', exist_ok=True)
 
@@ -603,9 +592,7 @@ def ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scan
     with open("data"+os.sep+'indentorType.txt', 'w', newline = '\n') as f:
         f.write(indentorType)
 
-# In[19]:
-
-
+# %%
 def ImportVariables():
     '''Import simulation geometry variables from csv files.
 
@@ -638,14 +625,14 @@ def ImportVariables():
 
     return atom_coord, atom_element, atom_radius, variables, baseDims, scanPos, clipped_scanPos, scanDims
 
-# In[20]:
+# %% [markdown]
 # #### Remote Functions
 # Functions for working on remote serve, including transfering files, submitting bash commands, submiting bash scripts for batch input files and check queue statis.
 
+# %% [markdown]
+# ##### Remote Connection
 
-# In[21]:
-# ##### Remote Server
-
+# %%
 def SSHconnect(remote_server, **kwargs):
     '''Function to open ssh connecction to remote server. 
     
@@ -653,13 +640,13 @@ def SSHconnect(remote_server, **kwargs):
 
     Args:
         remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]:
-                                \ -  host (str):     Hostname of the server to connect to
-                                \ -  port (int):     Server port to connect to 
-                                \ -  username (str): Username to authenticate as (defaults to the current local username)        
-                                \ -  password (str): Used for password authentication, None if ssh-key is used; is also used for private key decryption if passphrase is not given.
-                                \ -  sshkey (str):   Path to private key for keyexchange if password not used, None if not used
-                                \ -  home (str):     Path to home directory on remote server
-                                \ -  scratch (str):  Path to scratch directory on remote server
+                                \n-  host (str):     Hostname of the server to connect to
+                                \n-  port (int):     Server port to connect to 
+                                \n-  username (str): Username to authenticate as (defaults to the current local username)        
+                                \n-  password (str): Used for password authentication, None if ssh-key is used; is also used for private key decryption if passphrase is not given.
+                                \n-  sshkey (str):   Path to private key for keyexchange if password not used, None if not used
+                                \n-  home (str):     Path to home directory on remote server
+                                \n-  scratch (str):  Path to scratch directory on remote server
 
     Keywords Args:
         ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
@@ -670,7 +657,7 @@ def SSHconnect(remote_server, **kwargs):
 
     host, port, username, password, sshkey, home, scratch = remote_server
 
-    if 'ProxyJump' in kwargs:
+    if 'ProxyJump' in  kwargs:
         # Set variables for proxy port
         proxy_host, proxy_port, proxy_username, proxy_password, proxy_sshkey, proxy_home, proxy_scratch = kwargs['ProxyJump']
         hostname = socket.getfqdn()
@@ -697,11 +684,10 @@ def SSHconnect(remote_server, **kwargs):
 
     return ssh_client
 
-# In[21]:
+# %% [markdown]
 # ##### File Transfer
 
-# In[22]:
-
+# %%
 def RemoteSCPFiles(remote_server, files, remotePath, **kwargs):
     '''Function to make directory and transfer files to SSH server.
      
@@ -718,7 +704,7 @@ def RemoteSCPFiles(remote_server, files, remotePath, **kwargs):
     '''
     # SHH to clusters
     ssh_client = SSHconnect(remote_server, **kwargs)
-    stdin, stdout, stderr = ssh_client.exec_command('mkdir -p ' + remotePath)
+    stdin, stdout, stderr = ssh_client.exec_command('mkdir -p ' + remotePath + '/')
 
     # SCPCLient takes a paramiko transport as an argument- Uploading content to remote directory
     scp_client = SCPClient(ssh_client.get_transport())
@@ -732,10 +718,10 @@ def RemoteSCPFiles(remote_server, files, remotePath, **kwargs):
     
     ssh_client.close()
 
+# %% [markdown]
 # ##### Bash Command Submission
 
-# In[23]:
-
+# %%
 def RemoteCommand(remote_server, script, remotePath, command, **kwargs):
     '''Function to execute a command/ script submission on the SSH server. 
     
@@ -761,11 +747,10 @@ def RemoteCommand(remote_server, script, remotePath, command, **kwargs):
     for line in lines:
         print(line)
 
-# In[24]:
+# %% [markdown]
 # ##### Batch File Submission
 
-# In[25]:
-
+# %%
 def BatchSubmission(remote_server, fileName, subData, clipped_scanPos, scanPos, scanDims, binSize, clearance, remotePath, **kwargs):
     ''' Function to create bash script for batch submission of input file, and run them on remote server.
         
@@ -819,7 +804,7 @@ def BatchSubmission(remote_server, fileName, subData, clipped_scanPos, scanPos, 
         # Create set of submission comands for each scan locations
         jobs = ['abaqus interactive cpus=$NSLOTS memory="90%" mp_mode=mpi standard_parallel=all job='+fileName+str(int(i))+' input='+fileName+str(int(i))+'.inp scratch=$ABAQUS_PARALLELSCRATCH' 
                 for i in range( len(clipped_scanPos))]
-        
+    
     # Produce preamble to used to set up bash script
     scratch = remote_server[-1]
     lines = ['#!/bin/bash -l',
@@ -853,7 +838,7 @@ def BatchSubmission(remote_server, fileName, subData, clipped_scanPos, scanPos, 
     
     # If paralell mode, submit  individual scripts for individual scan locations
     if 'Submission' in kwargs and kwargs['Submission'] == 'paralell':
-        for i in range(len(scanPos)):
+        for i in range(len( len(clipped_scanPos))):
             # Job name set as each input file name as -N jobname is used as input variable in script
             jobName = fileName+str(int(i))
             # Command to run individual jobs
@@ -863,7 +848,7 @@ def BatchSubmission(remote_server, fileName, subData, clipped_scanPos, scanPos, 
             stdin, stdout, stderr = ssh_client.exec_command(batchCommand)
             lines = stdout.readlines()
             print(lines)
-    
+
     # Otherwise submit single serial scripts
     else:
         # Job name set as current directory name (change / to \\ for windows)
@@ -877,11 +862,10 @@ def BatchSubmission(remote_server, fileName, subData, clipped_scanPos, scanPos, 
         
     ssh_client.close() 
 
-# In[26]:
+# %% [markdown]
 # ##### Queue Status Function
 
-# In[27]:
-
+# %%
 def QueueCompletion(remote_server, **kwargs):
     '''Function to check queue statis and complete when queue is empty.
 
@@ -891,6 +875,7 @@ def QueueCompletion(remote_server, **kwargs):
     Keywords Args:
         ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
     '''
+
     # Log time
     t0 = time.time()
     complete= False
@@ -918,11 +903,10 @@ def QueueCompletion(remote_server, **kwargs):
     t1 = time.time()
     print(t1-t0)
 
-# In[28]:
+# %% [markdown]
 # ##### File Retrieval
 
-# In[29]:
-
+# %%
 def RemoteFTPFiles(remote_server, files, remotePath, localPath, **kwargs):
     '''  Function to transfer files from directory on SSH server to local machine. 
     
@@ -948,12 +932,10 @@ def RemoteFTPFiles(remote_server, files, remotePath, localPath, **kwargs):
     ftp_client.get(remotePath+'/'+files, localPath + os.sep + 'data'+ os.sep + files)  
     ftp_client.close()
 
-
-# In[30]:
+# %% [markdown]
 # ##### Remote Terminal
 
-# In[31]:
-
+# %%
 def Remote_Terminal(remote_server, **kwargs):
     ''' Function to emulate cluster terminal. 
     
@@ -995,15 +977,13 @@ def Remote_Terminal(remote_server, **kwargs):
     # Close cluster connection
     ssh_client.close()
 
-# In[32]:
+# %% [markdown]
 # #### Remote/ Local Submission 
 # Function to run simulation and scripts on the remote servers. Files for variables are transfered, ABAQUS scripts are run to create parts and input files. A bash file is created and submitted to run simulation for batch of inputs. Analysis of odb files is performed and data transfered back to local machine. Using keyword arguments invidual parts of simulation previously completed can be skipped.
 
-# In[33]:
-
+# %%
 def LocalSubmission():
     ''' Submit Abaqus scripts locally'''
-
     get_ipython().system('abaqus fetch job=AFMSurfaceModel')
     get_ipython().system('abaqus cae -noGUI AFMSurfaceModel.py')
 
@@ -1013,10 +993,8 @@ def LocalSubmission():
     get_ipython().system('abaqus fetch job=AFMODBAnalysis')
     get_ipython().system('abaqus cae -noGUI AFMODBAnalysis.py')
 
-
-# In[34]:
-
-def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, abqCommand, fileName, subData,  clipped_scanPos, scanPos, scanDims, binSize, clearance, **kwargs):
+# %%
+def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, abqCommand, fileName, subData, scanPos, clipped_scanPos, scanDims, binSize, clearance, **kwargs):
     '''Function to run simulation and scripts on the remote servers. 
     
     Files for variables are transfered, ABAQUS scripts are run to create parts and input files. A bash file is created and submitted to run simulation for 
@@ -1036,7 +1014,7 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
         scanPos (arr)         : Array of coordinates [x,y] of scan positions to image biomolecule 
         scanDims (arr)        : Geometric parameters for defining scan dimensiond [width, height] 
         binSize (float)       : Width of bins that subdivid xy domain during raster scanning/ spacing of the positions sampled over
-        clearance(type:float) : Clearance above molecules surface indentor is set to during scan
+        clearance(float)      : Clearance above molecules surface indentor is set to during scan
 
     Keywords Args:
         ProxyJump (proxy_server)          : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
@@ -1053,7 +1031,7 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
     if 'Transfer' not in kwargs.keys() or kwargs['Transfer'] == True:
         
         # Transfer scripts and variable files to remote server
-        RemoteSCPFiles(remote_server, csvfiles, remotePath, path = 'data', **kwargs)
+        RemoteSCPFiles(remote_server, csvfiles, remotePath, path='data', **kwargs)
         RemoteSCPFiles(remote_server, abqfiles, remotePath, **kwargs)
         
         print('File Transfer Complete')
@@ -1068,7 +1046,7 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
         RemoteCommand(remote_server, script, remotePath, abqCommand, **kwargs)
         
         t1 = time.time()
-        print('Part Creation Complete - ' + str(timedelta(seconds=t1-t0)) )
+        print('Part Creation Complete : ' + str(timedelta(seconds=t1-t0)) )
     
     if 'Input' not in kwargs.keys() or kwargs['Input'] == True:
         t0 = time.time()
@@ -1079,7 +1057,7 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
         RemoteCommand(remote_server, script, remotePath, abqCommand, **kwargs)
         
         t1 = time.time()
-        print('Input File Complete - ' + str(timedelta(seconds=t1-t0)) )
+        print('Input File Complete : ' + str(timedelta(seconds=t1-t0)) )
 
     #  --------------------------------------------Batch File Submission----------------------------------------------------
     if 'Batch' not in kwargs.keys() or kwargs['Batch'] == True:
@@ -1090,7 +1068,7 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
         BatchSubmission(remote_server, fileName, subData, clipped_scanPos, scanPos, scanDims, binSize, clearance, remotePath, **kwargs) 
         
         t1 = time.time()
-        print('Batch Submission Complete - '+ str(timedelta(seconds=t1-t0)) )
+        print('Batch Submission Complete : '+ str(timedelta(seconds=t1-t0)) )
     
     if 'Queue' not in kwargs.keys() or kwargs['Queue'] == True:
         t0 = time.time()
@@ -1100,7 +1078,7 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
         QueueCompletion(remote_server, **kwargs)
         
         t1 = time.time()
-        print('ABAQUS Simulation Complete - '+ str(timedelta(seconds=t1-t0)) )
+        print('ABAQUS Simulation Complete : '+ str(timedelta(seconds=t1-t0)) )
 
     #  -------------------------------------------ODB Analysis Submission----------------------------------------------------
     if 'Analysis' not in kwargs.keys() or kwargs['Analysis'] == True:
@@ -1112,12 +1090,11 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
         RemoteCommand(remote_server, script, remotePath, abqCommand, **kwargs)
         
         t1 = time.time()
-        print('ODB Analysis Complete - ' + str(timedelta(seconds=t1-t0)) )
+        print('ODB Analysis Complete : ' + str(timedelta(seconds=t1-t0)) )
 
     #  -----------------------------------------------File Retrieval----------------------------------------------------------
     if 'Retrieval' not in kwargs.keys() or kwargs['Retrieval'] == True:
         t0 = time.time()
-
         # Retrieve variables used for given simulation (in case variables redefined when skip kwargs used) 
         dataFiles = ('U2_Results.csv','RF_Results.csv','ErrorMask.csv')
         
@@ -1132,16 +1109,15 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
         t1 = time.time()
         print('File Retrevial Complete')
 
-# In[35]:
+# %% [markdown]
 # ### Post-Processing Functions
 # Function for postprocessing ABAQUS simulation data, loading variables from files in current directory and process data from simulation in U2/RF files. Process data from clipped scan positions to include full data range over all scan positions. Alongside, function to plot and visualise data. Then, calculates contours/z heights of constant force in simulation data for given threshold force and visualise.
 
-# In[36]:
+# %% [markdown]
 # #### Data Processing 
 # Function to load variables from fil~es in current directory and process data from simulation in U2/RF files. Process data from clipped scanpositions to include full data range over all scan positions. Alongside, function to plot and visualise data.
 
-# In[37]:
-
+# %%
 def DataProcessing(clipped_RF, clipped_U2, scanPos, clipped_scanPos, clipped_ErrorMask, indentionDepth, timePeriod, timeInterval):   
     '''Function to load variables from files in current directory and process data from simulation in U2/RF files. 
     
@@ -1164,7 +1140,8 @@ def DataProcessing(clipped_RF, clipped_U2, scanPos, clipped_scanPos, clipped_Err
         N (int)         : Number of frames in ABAQUS simulation/ time step  
     '''
     
-    # Set number if frames in ABAQUS simulation step -  N = T/dt + 1 for intial frame
+    
+    # Set number if frames in ABAQUS simulation step-  N = T/dt + 1 for intial frame
     N = int(timePeriod/ timeInterval)+1
     
     # Initialise reaction force RF and z indentation depth U2
@@ -1189,9 +1166,7 @@ def DataProcessing(clipped_RF, clipped_U2, scanPos, clipped_scanPos, clipped_Err
                 
     return U2, RF, ErrorMask, N
 
-
-# In[38]:
-
+# %%
 def DataPlot(scanPos, U2, RF, N):
     '''Produces scatter plot of indentation depth and reaction force to visualise and check simulation data.
     
@@ -1248,12 +1223,11 @@ def DataPlot(scanPos, U2, RF, N):
     ax2.view_init(50, 35)
     plt.show()
 
-# In[39]:
+# %% [markdown]
 # #### AFM Image Functions
 # Calculate contours/z heights of constant force in simulation data for given threshold force and visualise.
 
-# In[40]:
-
+# %%
 def ForceContours(U2, RF,forceRef, scanPos, scanDims, binSize, clearance):
     '''Function to calculate contours/z heights of constant force in simulation data for given threshold force.
     
@@ -1270,7 +1244,6 @@ def ForceContours(U2, RF,forceRef, scanPos, scanDims, binSize, clearance):
         Y (arr) : 2D array of y coordinates over grid positions 
         Z (arr) : 2D array of z coordinates of force contour over grid positions  
     '''
-    
     # Initialise dimensional variables
     xNum, yNum = int(scanDims[0]/binSize)+1, int(scanDims[1]/binSize)+1
     
@@ -1281,7 +1254,7 @@ def ForceContours(U2, RF,forceRef, scanPos, scanDims, binSize, clearance):
     # Loop over each reaction force array, i.e. each scan positions
     for i in range(len(RF)):
         
-        # If maximum for at this position is greater than Reference force
+        # If maximum for at this position is greater than indentation force
         if np.max(RF[i]) > forceRef:
             # Return inde`x of force threshold and store related depth
             j = [ k for k,v in enumerate(RF[i]) if v > forceRef][0]
@@ -1309,13 +1282,12 @@ def ForceContours(U2, RF,forceRef, scanPos, scanDims, binSize, clearance):
     ZConv  = convolve2d(Z, kpooling, mode='same', boundary='fill')   
     
     for i in NullIndentations:
-        DiffConv = (Z0Conv[i] - ZConv[i])/Z0Conv[i]
+        DiffConv = (Z0Conv[i] -ZConv[i])/Z0Conv[i]
         Z[i] = np.nan_to_num((1+DiffConv)*ZConv[i],0)
             
     return X, Y, Z 
 
-# In[41]:
-
+# %%
 def ContourPlot(X, Y, Z, ErrorMask, scanDims, binSize, forceRef, contrast, pdb, **kwargs):
     '''Function to plot force contor produced from simulation. Plots 3D wire frame image and a 2D AFM image.
     
@@ -1396,15 +1368,15 @@ def ContourPlot(X, Y, Z, ErrorMask, scanDims, binSize, forceRef, contrast, pdb, 
 
     # Set normalisation of colour map
     if 'PowerNorm' in kwargs and kwargs['PowerNorm'] != False:
-        normalizer = mpl.colors.PowerNorm(kwargs['PowerNorm'], 0, contrast*(Z.max(initial = 1e-10)))
+        normalizer = mpl.colors.PowerNorm(kwargs['PowerNorm'], 0, contrast*Z.compressed().max(initial = 1e-10))
     else:
-        normalizer = mpl.colors.Normalize(vmin=0,  vmax= contrast*Z.max(initial = 1e-10))
+        normalizer = mpl.colors.Normalize(vmin=0,  vmax= contrast*Z.compressed().max(initial = 1e-10))
      
     #  -------------------------------------------------2D Plots-----------------------------------------------------      
     # 2D heat map/ contour plot with interpolation
     fig, ax = plt.subplots(1, 2) 
-    im1 = ax[0].pcolormesh(X, Y, Z, cmap='afmhot', norm= normalizer)
-    # im1 = ax[0].imshow(Z, origin= 'lower', cmap='afmhot', norm= normalizer, extent=(-imageDims[0]/2,imageDims[0]/2,-imageDims[1]/2,imageDims[1]/2)  )
+    # im1 = ax[0].pcolormesh(X, Y, Z, cmap='afmhot', norm= normalizer)
+    im1 = ax[0].imshow(Z, origin= 'lower', cmap='afmhot', norm= normalizer, extent=(-imageDims[0]/2,imageDims[0]/2,-imageDims[1]/2,imageDims[1]/2)  )
     ax[0].set_xlabel(r'x (${\AA}$)')
     ax[0].set_ylabel(r'y (${\AA}$)')
     ax[0].axes.set_aspect('equal')
@@ -1427,15 +1399,13 @@ def ContourPlot(X, Y, Z, ErrorMask, scanDims, binSize, forceRef, contrast, pdb, 
     
     plt.show()
 
-
-# In[42]:
-
+# %%
 def HardSphereAFM(scanPos, scanDims, binSize, clearance, contrast,  pdb, **kwargs):
     '''Plot the molecules atoms surfaces and scan positions to visualise and check positions.
     
     Args:
         scanPos (arr)      : Array of coordinates [x,y,z] of scan positions to image biomolecule and initial heights/ hard sphere boundary
-        scanDims (arr)   : Geometric parameters for defining scan dimensiond [width, height] 
+        scanDims (arr)     : Geometric parameters for defining scan dimensiond [width, height] 
         binSize (float)    : Width of bins that subdivid xy domain during raster scanning/ spacing of the positions sampled over
         clearance (float)  : Clearance above molecules surface indentor is set to during scan
         contrast (float)   : Contrast between high and low values in AFM heat map (0-1)  
@@ -1445,11 +1415,11 @@ def HardSphereAFM(scanPos, scanDims, binSize, clearance, contrast,  pdb, **kwarg
         Noise (list)         : If listed adds noise to AFM images [strength, mean, standard deviation]
         ImagePadding (float) : Black space / padding around image as percentage of dimensions of molecule extent
         SaveImages (str)     : If Contour images to be saved include kwarg specifying the file path to folder
-    '''     
+    '''      
     #  ------------------------------------------------------------------------------------------------------------        
     # Initialise dimensional variables
     xNum, yNum = int(scanDims[0]/binSize)+1, int(scanDims[1]/binSize)+1
-    X, Y, Z = scanPos.reshape(yNum, xNum, 3)[:,:,0], scanPos.reshape(yNum, xNum, 3)[:,:,1], scanPos.reshape(yNum, xNum, 3)[:,:,2] - clearance
+    X, Y, Z = scanPos.reshape(yNum, xNum, 3)[:,:,0], scanPos.reshape(yNum, xNum, 3)[:,:,1], scanPos.reshape(yNum, xNum, 3)[:,:,2] -clearance
     
     
     # ----------------------------------Add noise and padding to image if in kwargs--------------------------------     
@@ -1529,12 +1499,1139 @@ def HardSphereAFM(scanPos, scanDims, binSize, clearance, contrast,  pdb, **kwarg
         
     plt.show()
 
-# In[43]:
-# ## Simulation Script
-# Final simulation function
+# %% [markdown]
+# ### Data Analysis Functions
 
-# In[44]:
+# %% [markdown]
+# #### Structural Analysis Functions
 
+# %% [markdown]
+# ![image.png](attachment:cec1971c-3ee5-4b4a-bcfb-fe523b84770e.png)![image.png](attachment:8efd46ec-1b52-477d-bed5-7907164b65e9.png)
+
+# %%
+def F_Hertz(U, E, rIndentor, elasticProperties):
+    '''Hertzian fit for indentation data'''   
+    E_true, v =  elasticProperties
+    R_eff = rIndentor
+    return (2/3) * (E/(1-v**2)) * np.sqrt(R_eff) * U**(3/2)
+
+# %%
+def Fourier(x, waveLength, *a):
+    '''Function to calculate Fourier Series for array of coefficence a'''
+    
+    fs = np.copy(x)**0-1 
+    N = int(len(a)/2)
+    
+    for k in range(N):
+        fs += a[k]*np.cos((2*np.pi*k*x)/waveLength) + a[k+N]*np.sin((2*np.pi*k*x)/waveLength)  
+        
+    return fs
+
+# %%
+def StructureAnalysis(X, Y, Z, scanDims, binSize, waveLength, Nmax):
+    '''Height, Volume, Cross-section, Profiles, FWHM, and Fourier
+
+    Calculate Fourier series components, Full Width Half Maxima and Volume for Force Contours of varying indentation force using splines
+    
+    Args:          
+        X (arr)        : 2D array of x coordinates over grid positions 
+        Y (arr)        : 2D array of y coordinates over grid positions 
+        Z (arr)        : 2D array of z coordinates of force contour over grid positions  
+        scanDims (arr) : Geometric parameters for defining scan dimensiond [width, height] 
+        Nmax (int)     : Maximum number of terms in fourier series of force contour 
+
+    Return:
+        XZ           : Z profile across X axis 
+        YZ           : Z profile across Y axis 
+        DNAheight    : DNA height 
+        FWHM (arr)   : Array of full width half maxima of contour [Nx]
+        Volume (arr) : Volume under AFM image 
+        AreaX (arr)  : Area under topography for across X domain [Nx]
+        AreaY (arr)  : Area under topography for across Y domain [Ny]
+        A (arr)      : Array of Fourier components for contour [Ny]
+    '''
+
+    # Initialise dimensional variables
+    xNum, yNum = int(scanDims[0]/binSize)+1, int(scanDims[1]/binSize)+1
+    X0 = np.linspace(X[0,0], X[0,-1], 250)
+
+    # -------------------------------------------- Calculate Height and profile ----------------------------------------------------  
+    # Produce profile arrays      
+    # XZ, YZ = np.mean(Z[int(yNum/2)-1:int(yNum/2)+1], axis=0), np.mean(Z[:, int(xNum/2)-1:int(xNum/2)+1], axis=1)    
+    XZ, YZ = Z[int(yNum/2)],Z[:, int(xNum/2)]
+    print('Z:',Z,'\nXZ:',XZ,'\n YZ:',YZ)
+    # plt.plot(XZ)
+    # plt.plot(YZ)
+
+    Fx, Fxz = X[0], XZ
+    forceSpline = UnivariateSpline(Fx, Fxz, s = 1) 
+    DNAheight = np.mean(np.sort(forceSpline(X0))[-100:])
+    
+   #  ----------------------------------------- Calculate Volume and cross sections------------------------------------------------  
+    Volume = np.trapz(np.trapz(Z, X[0]), Y[:,0])
+    
+    AreaX, AreaY  = [], []
+    AreaX.append( np.trapz(Z, X[0]) )
+    AreaY.append( np.trapz(Z.T, Y[:,0]) )
+
+    AreaX = np.array([value for sublist in AreaX for value in sublist])
+    AreaY = np.array([value for sublist in AreaY for value in sublist])
+
+   #  ----------------------------------------------Calculate FWHM and Fourier-----------------------------------------------------  
+    # Intialise arrays for to store volume, FWHM and Fourier Series component A, for each indentor size and indentation forces
+    FWHM, A = np.zeros([xNum]), np.zeros([yNum, 2*Nmax])     
+    
+    # -------------------------------------Set fwhm values for each force contour-------------------------------------
+    for n in range(xNum):
+        # Extract y coordinates and z compontents of force contour across x domain
+        Fy, Fz = Y[:,0], Z[:,n]
+        
+        # Connect contour points smoothly with a spline
+        forceSpline = UnivariateSpline(Fy, Fz, s = 0.01)         
+        
+        # Use try loop to avoid error for contours that cannot produce splines  
+        try: 
+            # Half maxima can be calculated by finding roots of spline 
+            roots = UnivariateSpline(Fy, Fz -(Fz.min() + Fz.max())/2, s = 0.01).roots()             
+            FWHM[n] = roots[1]-roots[0]
+        except:
+            None 
+            
+    # -------------------------------------Set fourier values for each force contour--------------------------------------------
+    for n in range(yNum):
+        
+        # Extract x coordinates and z compontents of force contour across y domain
+        Fx, Fz = X[0,:], Z[n,:]
+        try:            
+            # Connect contour points smoothly with a spline, can fail, use try to avoid code breaking
+            forceSpline = UnivariateSpline(Fx, Fz, s = 0.01)  
+        except:
+            None     
+        else:
+            # Calculate Fourier components
+            A[n], pcov = curve_fit(lambda x, *a: Fourier(x, waveLength, *a), X0, forceSpline(X0), p0 =tuple(np.zeros(2*Nmax)))
+        
+    return  XZ, YZ, DNAheight, FWHM[FWHM!=0].mean(), Volume, AreaX[AreaX!=0].mean(), AreaY[AreaY!=0].mean(), A
+
+# %% [markdown]
+# #### Cross-Section Contours and Force
+
+# %%
+def ForceGrid2D(X, Z, U2, RF):
+    '''Function to produce force heat map over scan domain.
+    
+    Args:
+        X (arr)             : 1D array of postions over x domain of scan positions
+        Z (arr)             : 1D array of postions over z domain of scan positions, discretised into bins of courseGrain value
+        U2 (arr)            : Array of indentors y indentor position over scan, discretised into bins of courseGrain value ( As opposed to displacement into surface given from simulation and used elsewhere)
+        RF (arr)            : Array of reaction force on indentor reference point
+        scanPos (arr)       : Array of coordinates (x,z) of scan positions to image biomolecule [Nb,[x,z]]
+        courseGrain (float) : Width of bins that subdivid xz domain of raster scanning/ spacing of the positions sampled over
+
+    Keywords Args:
+        Symmetric : If false skip postprocessing step to ensure AFM image is symmetric about z-axis, instead produce image from raw data {Default: True}
+    
+    Return:
+        forceGrid (arr)        : 2D Array of force heatmap over xz domain of scan i.e. grid of xz positions with associated force [Nx,Nz] 
+        forceGridmask (arr)    : 2D boolean array giving mask for force grid with exclude postions with no indentation data [Nx,Nz] 
+        forceContour (arr)     : 2D Array of coordinates for contours of constant force given by reference force across scan positons 
+        forceContourmask (arr) : 2D boolean array giving mask for force contour for zero values in which no reference force 
+    '''
+    #  ----------------------------------------------------Force Grid calculation------------------------------------------------------        
+    # Intialise force grid array
+    forceGrid = np.zeros([len(X),len(Z)])
+    
+    # For all x and y coordinates in course grained/binned domain
+    for i in range(len(X)):
+        for j in range(len(Z)):
+            
+            # For each indentation coordinate
+            for k in range(U2.shape[1]):
+                
+                # If equal to Y position then set corresponding forcee grid array value to force value for that position
+                if U2[i,k] == Z[j]:
+                    forceGrid[i,j] = RF[i,k]
+                        
+
+    #  -----------------------------------------------------Create Force Grid mask---------------------------------------------------      
+    # Initialise mask array, 0 values include 1 excludes
+    forceGridmask = np.zeros([len(X),len(Z)])  
+    
+    # For scan positions in force array/ same as positions in X array
+    for i in range(len(RF)):
+        
+        # Check how maNz non-zero values there are for each postion
+        k = [ k for k,v in enumerate(forceGrid[i]) if v != 0]
+        
+        # If there are non zero values
+        if len(k)!=0:
+            # Mask all grid values upto the first non zero force value position 
+            for j in range(k[0]):
+                forceGridmask[i,j] = 1
+                
+        # If all force values are zero 
+        else:
+            # Mask all y positions in force grid for those forces 
+            k = [ k for k,v in enumerate(forceGrid[i]) if Z[k] == U2[i,0] ]
+            for j in range(k[0]):
+                forceGridmask[i,j] = 1
+
+    return forceGrid, forceGridmask
+
+# %%
+def ForceContour2D(U2, RF, scanPos, forceRef):
+    ''' Function to calculate contours/z heights of constant force in simulation data for given threshold force.
+    
+    Args:
+        U2 (arr)            : Array of indentors y indentor position over scan ( As opposed to displacement into surface given from simulation and used elsewhere)
+        RF (arr)            : Array of reaction force on indentor reference point
+        scanPos (arr)       : Array of coordinates (x,z) of scan positions to image biomolecule [Nb,[x,z]]
+        forceRef (float)    : Threshold force to evaluate indentation contours at (pN)
+
+    Return:
+        forceContour (arr)     : 2D Array of coordinates for contours of constant force given by reference force across scan positons 
+        forceContourmask (arr) : 2D boolean array giving mask for force contour for zero values in which no reference force 
+    '''
+    #  ----------------------------------------------------Force Contour Calculation-------------------------------------------------         
+    # Initialise arrays
+    forceContour = np.zeros([len(RF),2])
+    forceContourmask = np.zeros([len(RF), 2])
+    
+    # For scan positions in force array/ same as positions in X array
+    for i in range(len(RF)):
+        
+        # If maximum at this position is greater than Reference force
+        if np.max(RF[i]) >= forceRef:
+            
+            # Return index at which force is greater than force threshold
+            j = [ k for k,v in enumerate(RF[i]) if v >= forceRef][0]
+            
+            # Store corrsponding depth/ Y position and X position for the index
+            forceContour[i] = np.array([ scanPos[i,0], U2[i,j] ])  
+            
+        else:
+            # Otherwise position not above force reference, therefore set mask values to 1
+            forceContourmask[i] = np.ones(2)
+    
+    return forceContour, forceContourmask
+
+# %%
+def ForceInterpolation(Xgrid, Zgrid, U2, RF, scanPos, rIndentor, elasticProperties, Nt):
+    '''Calculate a 2D force heatmap over the xz domain, produced from interpolated forces using Hertz model.
+    
+    Args:             
+        Xgrid (arr)             : 2D array/ grid of postions over xz domain of scan positions
+        Zgrid (arr)             : 2D array/ grid of postions over xz domain of scan positions       
+        U2 (arr)                : Array of indentors y displacement in time over scan position and  for one indenter [Ni, Nb, Nt]
+        RF (arr)                : Array of reaction force in time on indentor reference point over scan position  and for one indenter [Nb, Nt]
+        scanPos (arr)           : Array of initial scan positions for one indenter [Nb, [x, z]] 
+        rIndentor (float)       : Indentor radius of spherical tip portion varied for seperate  simulations
+        elasticProperties (arr) : Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]
+        Nt (int)                : Number of time steps
+
+    Return:
+        E_hertz (arr)      : Array of fitted elastic modulus for an indentation force value over each scan positions [Nb,Nt]
+        E_contour (arr)    : Array of fitted elastic modulus (upto clipped force) across the contour of the sample [Nb]
+        F (arr)            : Array of interpolated force values over xz grid for an indentors and reference force [Nb, Nz]  
+    '''
+    # Initialise array to hold elastic modulus
+    Nb = len(scanPos)
+    E_hertz   = np.zeros([Nb, Nt])
+    E_contour = np.zeros(Nb)
+
+
+    # Fit Hertz equation to force/indentation for each x scan positon, use lambda function to pass constant parameters(rIndentor/ elasticProperties )
+    for i, value in enumerate(scanPos):
+        for t in range(1, Nt):
+            u2, rf     = abs(U2[i,:t]), abs(RF[i,:t])
+            popt, pcov    = curve_fit(lambda x, E: F_Hertz(x, E, rIndentor, elasticProperties), u2, rf)
+
+            # Produce array of fitted elastic modulus over scan positions for each indentor
+            E_hertz[i,t]  = popt
+
+    forceRef = np.max(RF,axis=1) 
+    forceRef = forceRef[forceRef>0].min()
+   
+    # Find E across scan positions all to same depth-  loop over X  positions
+    for i in range(Nb):
+
+        # If maximum at this position is greater than Reference force
+        if np.max(RF[i]) >= forceRef:
+            
+            # Return index at which force is greater than force threshold
+            j = [ k for k,v in enumerate(RF[i]) if v >= forceRef][0]   
+            
+            # Store corrsponding E value for the index
+            E_contour[i] = E_hertz[i,j] 
+                        
+    
+    # Use Elastic modulus over scan position to produce continous spline
+    ESpline = UnivariateSpline(scanPos[:,0],  E_hertz[:,-1], s=2)
+    
+    # From spline interpolate youngs modulus over x domain
+    E = ESpline(Xgrid)
+    
+    # Create spline for initial scan positions
+    rackSpline = UnivariateSpline(scanPos[:,0], scanPos[:,1], s = 0.001)
+    # Calculate initial scan positions of x domain using scan position spline
+    Zinit = rackSpline(Xgrid)
+
+    # Use Hertz Eq to interpolate force over xz grid: (Yinit-Ygrid) gives indentation depths over grid
+    F = F_Hertz(Zinit -Zgrid, E, rIndentor, elasticProperties)
+    
+    return F, E_hertz, E_contour
+
+# %% [markdown]
+# #### Analysis Function
+
+# %%
+def DataAnalysis(U2, RF, force_data, scanPos, scanDims, binSize, clearance, waveLength, Nmax, courseGrain, rIndentor, elasticProperties, timeInterval, timePeriod, **kwargs):
+    '''Calculate a 2D force heatmap produced from simulation over the xz domain. Function for data analysis of simulation data. Producing arrays of Volume, FWHM, 
+    
+    Fourier series for contours of varying indentation force
+
+    Args:
+        U2 (arr)                : Array of indentors z displacement over scan position
+        RF (arr)                : Array of reaction force on indentor reference point
+        force_data              : Array of indentation forces to compare with
+        scanPos (arr)           : Array of coordinates [x,y] of scan positions to image biomolecule 
+        scanDims (arr)          : Geometric parameters for defining scan dimensiond [width, height] 
+        binSize(float)          : Width of bins that subdivid xy domain during raster scanning/ spacing of the positions sampled over
+        clearance(float)        : Clearance above molecules surface indentor is set to during scan  
+        waveLenght  (float)     : Principle waveLength for Fourier series
+        Nmax (int)              : Maximum number of terms in fourier series of force contour 
+        courseGrain (float)     : Width of bins that subdivid xz domain of raster scanning/ spacing of the positions sampled over
+        rIndentor               : Indentor radius
+        waveDims (list)         : Geometric parameters for defining base/ substrate structure [wavelength, amplitude, width, Number of oscilations/ groups in wave] 
+        elasticProperties (arr) : Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]       
+        timeInterval (float)    : Time steps data sampled over for ABAQUS simulation/ time step (dt)
+        timePeriod (float)      : Total time length for ABAQUS simulation/ time step (T)
+
+    Return:
+        indentationForce (arr) :  Array of indentation reference forces for force contours
+                    
+        structuralData:
+        XZ (arr)        : Z profile across X axis for given indentation forces 
+        YZ (arr)        : Z profile across Y axis for given indentation forces 
+        DNAheight (arr) : DNA height for varying indentation force
+        FWHM (arr)      : Array of full width half maxima of contour for each indentation force [Nf, Nx]
+        Volume (arr)    : Volume under AFM image for varying indentation force
+        AreaX (arr)     : Area under topography for across X domain for each indentation force [Nf, Nx]
+        AreaY (arr)     : Area under topography for across Y domain for each indentation force [Nf, Ny]
+        A (arr)         : Array of Fourier components for contour for each indentation force [Nf, Ny]
+
+        XYSectionData:  
+        XYSection (arr)    : 1D array of postions over x domain of scan positions
+        ZSection (arr)     : 1D array of postions over z domain of scan positions, discretised into bins of courseGrain value
+        XYscanPos (arr)    : Array of initial scan positions for indenter [Nxy, [x, z]]
+        U2Section (arr)    : Array of indentors y displacement in time over scan position [Nx, Nt]
+        RFSection (arr)    : Array of reaction force in time on indentor reference point over scan position [Nx, Nt]            
+        forceContour (arr) : 2D Array of coordinates for contours of constant force given by reference force across scan positons for reference force [Nf, Nxy, [x,z]] (With mask applied).
+        forceGrid (arr)    : 2D Array of force heatmap over xz domain of scan i.e. grid of xz positions with associated force for reference force [Nf,  Nxy, Nz] (With mask applied). 
+        E_hertz (arr)      : Array of fitted elastic modulus for each indentation force value over each scan positions [Nxy,Nt]
+        E_contour (arr)    : Array of fitted elastic modulus (upto clipped force) across the contour of the sample  [Nxy]
+        F (arr)            : Array of interpolated force values over xz grid for all indentors and reference force [Nxy, Nz] 
+
+    '''
+
+    #  ------------------------------------------Initialise  Variables ------------------------------------------------  
+    xNum, yNum , Nt, Nf = int((scanDims[0])/(binSize) + 1), int((scanDims[1])/(binSize) + 1), int(timePeriod/ timeInterval)+1, len(force_data)+1
+    
+    indentationForce = np.zeros(Nf)  ## Nf = 20  np.logspace(1,3.7,Nf)
+    indentationForce[1:] = np.sort(np.copy(force_data))*10
+
+    #  ------------------------------------------Initialise  Variables for force grid------------------------------------------------  
+    xi, yi = int(xNum/2), int(yNum/2)
+    scanPosX, scanPosY = scanPos.reshape(yNum, xNum, 3)[yi,:,[0,2]].T, scanPos.reshape(yNum, xNum, 3)[:,xi,[1,2]] #- np.array([0, clearance])[None,: ]
+
+    XSectionX, ZSectionX = scanPosX[:,0], scanPosX[:,1]
+    YSectionY, ZSectionY = scanPosY[:,0], scanPosY[:,1]
+
+    U2SectionX, RFSectionX = U2.reshape(yNum, xNum, Nt)[yi], RF.reshape(yNum, xNum, Nt)[yi]
+    U2SectionY, RFSectionY = U2.reshape(yNum, xNum, Nt)[:,xi], RF.reshape(yNum, xNum, Nt)[:,xi]
+
+    # Convert indentation data to indentor Z displacement and discretise values into bins of width given by course grain value -produces an Z arrays over domain of indentor position in X/Y cross-section 
+    ZIndentorX, ZIndentorY = (U2SectionX + ZSectionX[:,None]), (U2SectionY + ZSectionY[:,None])
+    U2SectionX, U2SectionY = courseGrain*np.round(ZIndentorX/courseGrain) , courseGrain*np.round(ZIndentorY/courseGrain)    
+    ZSectionX,  ZSectionY  = (np.round( np.arange( U2SectionX.min(initial=0), U2SectionX.max() + courseGrain, courseGrain )*10)/10, 
+                              np.round( np.arange( U2SectionY.min(initial=0), U2SectionY.max() + courseGrain, courseGrain )*10)/10)    
+
+
+    #  -----------------------------------------------------Set force grid and force contour-----------------------------------------
+    # Set force grid and force contour for each indentation force 
+    forceGridX, forceGridmaskX = ForceGrid2D(XSectionX, ZSectionX, U2SectionX, RFSectionX)
+    forceGridY, forceGridmaskY = ForceGrid2D(YSectionY, ZSectionY, U2SectionY, RFSectionY)
+
+    # Intialise arrays for indentation forces
+    forceContourX, forceContourmaskX = np.zeros([Nf, xNum, 2]),  np.zeros([Nf, xNum, 2])
+    forceContourY, forceContourmaskY = np.zeros([Nf, yNum, 2]),  np.zeros([Nf, yNum, 2])
+
+    for i  in range(Nf):
+        forceContourX[i], forceContourmaskX[i] = ForceContour2D(ZIndentorX, RFSectionX, scanPosX, indentationForce[i])
+        forceContourY[i], forceContourmaskY[i] = ForceContour2D(ZIndentorY, RFSectionY, scanPosY, indentationForce[i])
+
+    # Mask force grid excluding postions with no indentation data [Nx,Nz] and mask force contour for zero values in which below reference force 
+    forceGridX, forceContourX = np.ma.masked_array(forceGridX, mask=forceGridmaskX), np.ma.masked_array(forceContourX, mask=forceContourmaskX) 
+    forceGridY, forceContourY = np.ma.masked_array(forceGridY, mask=forceGridmaskY), np.ma.masked_array(forceContourY, mask=forceContourmaskY)     
+
+
+    #  --------------------------------------Calculate Hertz fit and interpolate force from the fit---------------------------------
+    # Initialise grid arrays over xz domain
+    X0, XZ0 = np.linspace(XSectionX[0], XSectionX[-1], 250), np.linspace(ZSectionX[0], ZSectionX[-1], 250)
+    Y0, YZ0 = np.linspace(YSectionY[0], YSectionY[-1], 250), np.linspace(ZSectionY[0], ZSectionY[-1], 250)
+
+    Xgrid, XZgrid = np.meshgrid(X0,XZ0)     
+    Ygrid, YZgrid = np.meshgrid(Y0,YZ0)   
+
+    # For each indentor calculate interpolated force heat maps
+    FX, E_hertzX, E_contourX = ForceInterpolation(Xgrid, XZgrid, U2SectionX, RFSectionX, scanPosX, rIndentor, elasticProperties, Nt)
+    FY, E_hertzY, E_contourY = ForceInterpolation(Ygrid, YZgrid, U2SectionY, RFSectionY, scanPosY, rIndentor, elasticProperties, Nt)
+
+    if 'NStructural' not in kwargs.keys() or kwargs['NStructural'] == False:
+        #  ----------------------------------------------Calculate Volume and Fourier-----------------------------------------------------  
+        # Intialise arrays for to store volume, FWHM and Fourier Series component A, for each indentor size and reference forces
+        XZ, YZ, DNAheight, FWHM, Volume, AreaX, AreaY,  A = np.zeros([Nf,xNum]), np.zeros([Nf,yNum]), np.zeros([Nf]), np.zeros([Nf]), np.zeros([Nf]), np.zeros([Nf]), np.zeros([Nf]), np.zeros([Nf, yNum, 2*Nmax])
+
+        # Hard sphere analysis
+        X_hs, Y_hs, Z_hs = scanPos.reshape(yNum, xNum, 3)[:,:,0], scanPos.reshape(yNum, xNum, 3)[:,:,1], scanPos.reshape(yNum, xNum, 3)[:,:,2] -clearance
+        XZ[0], YZ[0], DNAheight[0], FWHM[0], Volume[0], AreaX[0], AreaY[0], A[0] = StructureAnalysis(X_hs, Y_hs, Z_hs, scanDims, binSize, waveLength, Nmax)
+        
+        # Simulation data analysis
+        for i, forceRef in enumerate(indentationForce[1:]):
+            X,Y,Z = ForceContours(U2, RF, forceRef/1, scanPos, scanDims, binSize, clearance)
+
+            XZ[i+1], YZ[i+1], DNAheight[i+1], FWHM[i+1], Volume[i+1], AreaX[i+1], AreaY[i+1], A[i+1] = StructureAnalysis(X, Y, Z, scanDims, binSize, waveLength, Nmax)
+
+        # Group data to return
+        structuralData = (XZ, YZ, DNAheight, FWHM, Volume, AreaX, AreaY, A) 
+
+        XSectionData   = (XSectionX, ZSectionX, scanPosX, forceContourX, forceGridX, E_hertzX, E_contourX, RFSectionX)
+        YSectionData   = (YSectionY, ZSectionY, scanPosY, forceContourY, forceGridY, E_hertzY, E_contourY, RFSectionY)
+
+        return indentationForce, structuralData, XSectionData, YSectionData
+
+    else: 
+        XSectionData   = (XSectionX, ZSectionX, scanPosX, forceContourX, forceGridX, E_hertzX, E_contourX, RFSectionX)
+        YSectionData   = (YSectionY, ZSectionY, scanPosY, forceContourY, forceGridY, E_hertzY, E_contourY, RFSectionY)
+
+        return indentationForce, XSectionData, YSectionData
+
+# %% [markdown]
+# ### Plotting Functions
+
+# %%
+def SurfacePlot(scanPos, scanDims, binSize, surfacePos, surfaceDims, surfaceSize, tipDims, **kwargs):
+    '''Plot the molecules atoms surfaces and scan positions to visualise and check positions.
+    
+    Args:
+        scanPos (arr)     : Array of coordinates [x,y,z] of scan positions to image biomolecule and initial heights/ hard sphere boundary
+        scanDims (arr)    : Geometric parameters for defining scan dimensiond [width, height] 
+        binSize (float)   : Width of bins that subdivid xy domain during raster scanning/ spacing of the positions sampled over
+        surfacePos (arr)  : Array of coordinates [x,y,z] of the sample surface to define surface mesh
+        surfaceDims (arr) : Geometric parameters for defining surface dimensiond [width, height] 
+        surfaceSize (str) : Width of bins that subdivid xy domain of sample surface 
+        tipDims (list)    :  Geometric parameters for defining capped tip structure  
+
+    Keywords Args:
+        SaveImages (str)  : If Contour images to be saved include kwarg specifying the file path to folder
+    '''     
+    #  ----------------------------------------------Surface and Scan positions ------------------------------------------------------
+    # Initialise scan geometry
+    xNum, yNum = int(scanDims[0]/binSize)+1, int(scanDims[1]/binSize)+1
+    X, Y, Z = scanPos.reshape(yNum, xNum, 3)[:,:,0], scanPos.reshape(yNum, xNum, 3)[:,:,1], scanPos.reshape(yNum, xNum, 3)[:,:,2]     
+
+    # Initialise surface structure
+    xNum1, yNum1 = int(surfaceDims[0]/surfaceSize)+1, int(surfaceDims[1]/surfaceSize)+1
+    X_surface, Y_surface, Z_surface = surfacePos.reshape(yNum1, xNum1, 3)[:,:,0], surfacePos.reshape(yNum1, xNum1, 3)[:,:,1], surfacePos.reshape(yNum1, xNum1, 3)[:,:,2] 
+
+    # Initialise tip structure
+    N, i, j = 25, int(xNum*yNum/2), 300
+    rIndentor, theta, tip_length, r_int, z_int, r_top, z_top = tipDims
+
+    # Create the mesh in polar coordinates and compute corresponding Z.
+    r, p = np.linspace(0, r_top, N), np.linspace(0, 2*np.pi, N)
+    R, P = np.meshgrid(r, p)
+    rZ  = Zconical(R, 0, r_int, z_int, theta, rIndentor, tip_length) + scanPos[i,2]
+    rX, rY = R*np.cos(P), R*np.sin(P)
+
+    #  -------------------------------------------------3D Plots-----------------------------------------------------      
+    # Plot 3D Contour Plot
+    fig, ax = plt.figure(), plt.axes(projection = "3d") 
+   
+    
+    # ax.plot_surface(rX, rY, rZ2, facecolor='red', edgecolor='red', lw=0.5, rstride=1, cstride=1, alpha=0.8)
+    # ax.plot_surface(rX, rY, -rZ2+2*(rIndentor+scanPos[i,2]), facecolor='red', edgecolor='red', lw=0.5, rstride=1, cstride=1, alpha=0.8)
+
+    ax.plot_surface(rX + scanPos[j,0], rY + scanPos[j,1], rZ, facecolor='royalblue', edgecolor='royalblue', lw=0.5, rstride=1, cstride=1, alpha=0.8, zorder = 0.3)
+    ax.plot_surface(X_surface, Y_surface, Z_surface, facecolor='black', edgecolor='black', lw=0.5, rstride=1, cstride=1, alpha=0.4, zorder = 0.1)
+    ax.scatter3D(scanPos[:i,0], scanPos[:i,1], scanPos[:i,2], color='r', alpha = 1, s=5, zorder = 0.2)
+    
+    ax.set_xlim(X.min(),X.max())
+    ax.set_ylim(Y.min(),Y.max())
+    ax.set_zlim(Z.min(),Z.max())
+    
+    ax.axes.set_aspect('equal')
+    ax.view_init(30,210)
+
+    color_tuple = (1.0, 1.0, 1.0, 0.0)
+
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_zticks([])
+
+    # make the panes transparent
+    ax.xaxis.set_pane_color(color_tuple)
+    ax.yaxis.set_pane_color(color_tuple)
+    ax.zaxis.set_pane_color(color_tuple)
+
+    # make the axis lines transparent
+    ax.xaxis.line.set_color(color_tuple)
+    ax.yaxis.line.set_color(color_tuple)
+    ax.zaxis.line.set_color(color_tuple)
+
+    # make the labels transparent
+    ax.xaxis.set_label_position('none') 
+    ax.yaxis.set_label_position('none') 
+    ax.zaxis.set_label_position('none')
+
+    # make the grid lines transparent
+    ax.xaxis._axinfo["grid"]['color'] =  (color_tuple)
+    ax.yaxis._axinfo["grid"]['color'] =  (color_tuple)
+    ax.zaxis._axinfo["grid"]['color'] =  (color_tuple)
+
+    # print(list(ax.spines.keys()))
+    ax.spines['top'].set_color('white')
+    ax.spines['bottom'].set_color('white')
+    ax.spines['left'].set_color('white')
+    ax.spines['right'].set_color('white')
+
+    ax.tick_params(colors='white')
+    # fig.patch.set_edgecolor('black')
+
+    # rect = plt.Rectangle(
+    #     # (lower-left corner), width, height
+    #     (0.35, 0.25), 0.425, 0.75, fill=False, color="k", lw=1, 
+    #     zorder=1000, transform=fig.transFigure, figure=fig
+    # )
+    # fig.patches.extend([rect])
+    
+    plt.show()
+    
+    # Optionally save image
+    if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
+        fig.savefig(kwargs['SaveImages'] + os.sep + 'AFMSurfaceDiagram.pdf', bbox_inches = 'tight') 
+
+# %%
+def ManuscriptAFMContourPlot(U2, RF, scanPos, scanDims, binSize, clearance, ErrorMask, forceRef, contrast, pdb, **kwargs):
+    '''Function to plot force contor produced from simulation. Plots 3D wire frame image and a 2D AFM image.
+    
+    Args:
+        U2 (arr)          : Array of indentors z displacement over scan position
+        RF (arr)          : Array of reaction force on indentor reference point
+        scanPos (arr)     : Array of coordinates [x,y,z] of scan positions to image biomolecule 
+        scanDims (arr)    : Geometric parameters for defining scan dimensiond [width, height] 
+        binSize (float)   : Width of bins that subdivid xy domain during raster scanning/ spacing of the positions sampled over
+        clearance (float) : Clearance above molecules surface indentor is set to during scan
+        ErrorMask (arr)   : Boolean array specifying mask for all scan positions which errored in ABAQUS
+        scanDims (arr)    : Geometric parameters for defining scan dimensiond [width, height] 
+        binSize (float)   : Width of bins that subdivid xy domain during raster scanning/ spacing of the positions sampled over
+        forceRef (float)  : Threshold force to evaluate indentation contours at (pN)
+        contrast (float)  : Contrast between high and low values in AFM heat map (0-1)
+        pdb (str)         : PDB (or CSV) file name of desired biomolecule
+        
+    Keywords Args:
+        Noise (list)         : If listed adds noise to AFM images [strength, mean, standard deviation]
+        ImagePadding (float) : Black space / padding around image as percentage of dimensions of molecule extent
+        SaveImages (str)     : If Contour images to be saved include kwarg specifying the file path to folder
+    '''    
+    # ------------------------------------Add noise and padding to image if in kwargs--------------------------------   
+    # Current data shape
+    xNum,  yNum  = int(scanDims[0]/binSize)+1,  int(scanDims[1]/binSize)+1
+    Zmask = ErrorMask.reshape(yNum, xNum)
+    X,Y,Z = ForceContours(U2, RF,forceRef, scanPos, scanDims, binSize, clearance)
+
+    if 'ImagePadding' in kwargs.keys():
+        imagePadding = kwargs['ImagePadding']
+        
+        padDims      = imagePadding*scanDims
+        xPad,  yPad  = int(padDims[0]/binSize)+1, int(padDims[1]/binSize)+1 
+        xDiff, yDiff = abs((xPad-xNum)/2), abs((yPad-yNum)/2)
+        
+        X, Y = np.meshgrid(np.linspace(-padDims[0]/2, padDims[0]/2, xPad),
+                           np.linspace(-padDims[1]/2, padDims[1]/2, yPad))   
+        
+        if imagePadding >= 1:            
+            Z = np.pad(Z, pad_width= ( (round(yDiff-0.25), round(yDiff+0.25)), (round(xDiff-0.25), round(xDiff+0.25)) ), mode='constant')
+            Zmask = np.pad(Zmask, pad_width= ( (round(yDiff-0.25), round(yDiff+0.25)), (round(xDiff-0.25), round(xDiff+0.25)) ), mode='constant')
+        
+        else:
+            Z = np.delete(Z, np.arange(-round(yDiff-0.25), round(yDiff+0.25)), axis = 0)
+            Zmask = np.delete(Zmask, np.arange(-round(yDiff-0.25), round(yDiff+0.25)), axis = 0)
+            
+            Z = np.delete(Z, np.arange(-round(xDiff-0.25), round(xDiff+0.25)), axis = 1)
+            Zmask = np.delete(Zmask, np.arange(-round(xDiff-0.25), round(xDiff+0.25)), axis = 1)
+            
+        imageDims = padDims
+        
+    else:
+        imageDims = scanDims
+        
+    if 'Noise' in kwargs.keys():
+        noise_strength, noise_mean, noise_variance = kwargs['Noise'] 
+        noise = noise_strength*np.random.normal(noise_mean, noise_variance, [Z.shape[0], Z.shape[1]])
+        Z+=noise      
+    else:
+        None      
+        
+    # Reshape image mask and apply to data
+    X = np.ma.masked_array(X, mask = Zmask )
+    Y = np.ma.masked_array(Y, mask = Zmask )
+    Z = np.ma.masked_array(Z, mask = Zmask )
+    
+    # Set normalisation of colour map
+    if 'PowerNorm' in kwargs and kwargs['PowerNorm'] != False:
+        normalizer = mpl.colors.PowerNorm(kwargs['PowerNorm'], 0, contrast*Z.compressed().max(initial = 1e-10))
+    else:
+        normalizer = mpl.colors.Normalize(vmin=0,  vmax= contrast*Z.compressed().max(initial = 1e-10))
+     
+    #  -------------------------------------------------2D Plots-----------------------------------------------------      
+    # 2D heat map/ contour plot with interpolation
+    fig, ax = plt.subplots(1, 1, figsize = (linewidth/2, (1/1.61)*linewidth/2)) 
+    im = ax.imshow(Z, origin= 'lower', cmap='afmhot', interpolation='bicubic', norm= normalizer, interpolation_stage = 'rgba', 
+                           extent=(-imageDims[0]/2,imageDims[0]/2,-imageDims[1]/2,imageDims[1]/2) )
+    ax.axhline(0, ls = ':', color='r')
+    ax.axvline(0, ls = ':', color='r')
+    ax.set_xlabel(r'x (${\AA}$)')
+    ax.set_ylabel(r'y (${\AA}$)')
+    ax.axes.set_aspect('equal')
+    ax.set_facecolor('grey')
+    
+    plt.subplots_adjust(wspace = 0.5)
+    cbar= fig.colorbar(im, ax= ax, orientation='vertical')
+    cbar.set_label(r'z (${\AA}$)', rotation=0)
+    cbar.set_ticks([0, 10, 20])
+    cbar.ax.set_ylim(0, 20)
+    cbar.minorticks_on() 
+    cbar.ax.yaxis.set_label_coords(8.2, 0.55)
+
+    fig.patch.set_edgecolor('black')
+
+    rect = plt.Rectangle(
+        # (lower-left corner), width, height
+        (-0.07, -0.2), 1.12, 1.15, fill=False, color="k", lw=1, 
+        zorder=1000, transform=fig.transFigure, figure=fig
+    )
+    fig.patches.extend([rect])
+
+    # Optionally save image
+    if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
+        fig.savefig(kwargs['SaveImages'] + os.sep + 'AFMSimulationMolecule-'+pdb+'.pdf', bbox_inches = 'tight', edgecolor=fig.get_edgecolor())
+    
+    plt.show()
+
+# %%
+def ManuscriptDiagram(scanPos, scanDims, binSize, surfacePos, surfaceDims, surfaceSize, tipDims, **kwargs):
+    '''Plot the surfaces and scan positions to visualise and check positions. 
+    
+    Args:
+        scanPos (arr)     : Array of coordinates [x,y,z] of scan positions to image biomolecule and initial heights/ hard sphere boundary
+        scanDims (arr)    : Geometric parameters for defining scan dimensiond [width, height] 
+        binSize (float)   : Width of bins that subdivid xy domain during raster scanning/ spacing of the positions sampled over
+        surfacePos (arr)  : Array of coordinates [x,y,z] of the sample surface to define surface mesh
+        surfaceDims (arr) : Geometric parameters for defining surface dimensiond [width, height] 
+        surfaceSize (str) : Width of bins that subdivid xy domain of sample surface 
+        tipDims (list)    :  Geometric parameters for defining capped tip structure 
+    
+    Keywords Args:
+        SaveImages (str)     : If Contour images to be saved include kwarg specifying the file path to folder
+    '''     
+    #  ----------------------------------------------------Initial variables---------------------------------------------------------
+    xNum, yNum = int(scanDims[0]/binSize)+1, int(scanDims[1]/binSize)+1
+    xNum1, yNum1 = int(surfaceDims[0]/surfaceSize)+1, int(surfaceDims[1]/surfaceSize)+1
+    xi, xj = int(xNum/2),int(xNum1/2+2)
+    yi, yj = int(yNum/2),int(yNum1/2)
+
+    # Set tip and wave dimensional variables and set index for scan position to plot tip at
+    rIndentor, theta, tip_length, r_int, z_int, r_top, z_top = tipDims
+
+    #  ----------------------------------------------Surface and Scan positions ------------------------------------------------------
+    # Scan positions
+    X_hs, Y_hs, Z_hs = scanPos.reshape(yNum, xNum, 3)[:,:,0], scanPos.reshape(yNum, xNum, 3)[:,:,1], scanPos.reshape(yNum, xNum, 3)[:,:,2] 
+    Fx, Fxz     = X_hs[0,:], Z_hs[yi,:]
+    Fy, Fyz     = Y_hs[:,0], Z_hs[:,xi]
+
+    # Surface positions
+    X_surface, Y_surface, Z_surface = surfacePos.reshape(yNum1, xNum1, 3)[:,:,0], surfacePos.reshape(yNum1, xNum1, 3)[:,:,1], surfacePos.reshape(yNum1, xNum1, 3)[:,:,2] 
+    Fx_surface, Fxz_surface         = X_surface[0,:], Z_surface[yj,:]
+    Fy_surface, Fyz_surface         = Y_surface[:,0], Z_surface[:,xj]
+
+    # Produce array for the conical x extent and spherical tip with polar coordinates
+    X  = np.linspace(-r_top, r_top, 1000)
+    x1 = rIndentor*np.cos(np.linspace(-np.pi, np.pi, 1000))
+    z1 = rIndentor*np.sin(np.linspace(-np.pi, np.pi, 1000))
+
+   
+    #  ------------------------------------------------------------------------------------------------------------------------
+    #  ------------------------------------------------------------------------------------------------------------------------
+    #  -------------------------------------------------------Plot 1-----------------------------------------------------------
+    # Create figure for scan positions
+    fig, ax = plt.subplots(1,1, figsize= (linewidth, 1/1.61*linewidth))
+    
+    # Plot spherical and conical scan position as points
+    ax.plot(Fx, Fxz, '.', color='r')
+    ax.plot(Fx_surface, Fxz_surface, '-', color='k')
+
+    # # Plot the geometry of spherical and conical tip at index i
+    ax.plot(X+Fx[xi], Zconical(X, 0, r_int, z_int, theta, rIndentor, tip_length)+Fxz[xi], color=  '#5a71ad')
+    ax.plot(x1+Fx[xi], z1+rIndentor+Fxz[xi], ':', color = '#fc8535')
+
+    ax.plot(X+Fx[xi+5], Zconical(X, 0, r_int, z_int, theta, rIndentor, tip_length)+Fxz[xi+5], color=  '#5a71ad')
+    ax.plot(x1+Fx[xi+5], z1+rIndentor+Fxz[xi+5], ':', color = '#fc8535')
+
+    #  --------------------------------------------------Set axis blank ----------------------------------------------------------
+    # Set axis labels to create desired layout
+    # ax.set_xlabel(r'$x/\lambda$', labelpad = 5, color='white')
+    ax.set_xlim(Fx[0],Fx[-1])
+    ax.set_ylim(0,Z_hs.max()+tip_length)
+    ax.axes.set_aspect('equal')
+        
+    # Place axis on right for desired spacing
+    ax.yaxis.set_label_position("right")
+    ax.yaxis.tick_right()
+    
+    # Make axis invisible    
+    ax.spines['top'].set_color('white')
+    ax.spines['bottom'].set_color('white')
+    ax.spines['left'].set_color('white')
+    ax.spines['right'].set_color('white')
+    ax.tick_params(colors='white')
+
+    #  --------------------------------------------------Plot Annotations---------------------------------------------------------
+    # # Annotating Diagram
+    # ax.text(-waveLength/2-rIndentor/2-0.3, waveAmplitude + rIndentor + 0.8, 'R', color = '#fc8535')
+    # ax.text(-waveLength/2, 0.3, r'$\lambda$')   
+    
+    # plt.rcParams['font.size'] = 8
+
+    # ax.annotate('', color = '#fc8535',
+    #             xy=(-waveLength/2+1, waveAmplitude+rIndentor), xycoords='data',
+    #             xytext=(-waveLength/2-rIndentor, waveAmplitude+rIndentor), textcoords='data',
+    #             arrowprops=dict(arrowstyle="<->", connectionstyle="arc3", color='#fc8535'))
+    
+    # ax.annotate('', xy=(-waveLength, -0.4), xycoords='data', 
+    #             xytext=(0, -0.4), textcoords='data',
+    #             arrowprops=dict(arrowstyle="<->", connectionstyle="arc3", color='k'))
+    
+
+    # plt.rcParams['font.size'] = 13
+
+    # Optionally save image
+    if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
+        fig.savefig(kwargs['SaveImages'] + os.sep + 'AFM_ManuscriptDiagram-X.pdf', bbox_inches = 'tight') 
+    plt.show()
+    
+    #  ------------------------------------------------------------------------------------------------------------------------
+    #  ------------------------------------------------------------------------------------------------------------------------
+    #  -----------------------------------------------------Plot2--------------------------------------------------------------
+    fig, ax = plt.subplots(1,1, figsize = (linewidth, 1/1.61*linewidth))
+    
+    # Plot spherical and conical scan position as points
+    ax.plot(Fy, Fyz, '.', color='r')
+    ax.plot(Fy_surface, Fyz_surface, '-', color='k')
+
+    # # Plot the geometry of spherical and conical tip at index i
+    ax.plot(X+Fy[yi], Zconical(X, 0, r_int, z_int, theta, rIndentor, tip_length)+Fyz[yi], color=  '#5a71ad')
+    ax.plot(x1+Fy[yi], z1+rIndentor+Fyz[yi], ':', color = '#fc8535')
+
+    ax.plot(X+Fy[yi-5], Zconical(X, 0, r_int, z_int, theta, rIndentor, tip_length)+Fyz[yi-5], color=  '#5a71ad')
+    ax.plot(x1+Fy[yi-5], z1+rIndentor+Fyz[yi-5], ':', color = '#fc8535')
+
+
+    #  --------------------------------------------------Set axis blank ----------------------------------------------------------
+    # Set axis labels to create desired layout
+    # ax.set_xlabel(r'$x/\lambda$', labelpad = 5, color='white')
+    ax.set_xlim(Fx[0],Fx[-1])
+    ax.set_ylim(0,Z_hs.max()+tip_length)
+    ax.axes.set_aspect('equal')
+        
+    # Place axis on right for desired spacing
+    ax.yaxis.set_label_position("right")
+    ax.yaxis.tick_right()
+    
+    # Make axis invisible    
+    ax.spines['top'].set_color('white')
+    ax.spines['bottom'].set_color('white')
+    ax.spines['left'].set_color('white')
+    ax.spines['right'].set_color('white')
+    ax.tick_params(colors='white')
+
+    #  --------------------------------------------------Plot Annotations---------------------------------------------------------
+    # # Annotating Diagram
+    # ax.text(-waveLength/2-rIndentor/2-0.3, waveAmplitude + rIndentor + 0.8, 'R', color = '#fc8535')
+    # ax.text(-waveLength/2, 0.3, r'$\lambda$')   
+    
+    # plt.rcParams['font.size'] = 8
+
+    # ax.annotate('', color = '#fc8535',
+    #             xy=(-waveLength/2+1, waveAmplitude+rIndentor), xycoords='data',
+    #             xytext=(-waveLength/2-rIndentor, waveAmplitude+rIndentor), textcoords='data',
+    #             arrowprops=dict(arrowstyle="<->", connectionstyle="arc3", color='#fc8535'))
+    
+    # ax.annotate('', xy=(-waveLength, -0.4), xycoords='data', 
+    #             xytext=(0, -0.4), textcoords='data',
+    #             arrowprops=dict(arrowstyle="<->", connectionstyle="arc3", color='k'))
+    
+
+    # plt.rcParams['font.size'] = 1
+    # Optionally save image
+    if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
+        fig.savefig(kwargs['SaveImages'] + os.sep + 'AFM_ManuscriptDiagram-Y.pdf', bbox_inches = 'tight') 
+    plt.show()
+
+# %%
+def AFMForceContours(RF, XSectionData, YSectionData, surfacePos, surfaceDims, surfaceSize, tipDims, clearance, elasticProperties, contrast, m, **kwargs):
+    '''Function to plot a 2D force heatmap produced from simulation over the xz domain for single indenter and refereance force.
+    
+    Args:
+        RF (arr)                : Array of reaction force in time on indentor reference point over scan position          
+        XSectionData            : Scan and force data for scan cross section across X axis
+        YSectionData (arr)      : Scan and force data for scan cross section across Y axis
+        surfacePos (arr)        : Array of coordinates [x,y,z] of the sample surface to define surface mesh
+        surfaceDims (arr)       : Geometric parameters for defining surface dimensiond [width, height] 
+        surfaceSize (str)       : Width of bins that subdivid xy domain of sample surface 
+        tipDims (list)          : Geometric parameters for defining capped tip structure    
+        elasticProperties (arr) : Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]
+        contrast (float)        : Contrast between high and low values in AFM heat map (0-1)
+
+    Keywords Args:
+        Noise (list)         : If listed adds noise to AFM images [strength, mean, standard deviation]
+        ImagePadding (float) : Black space / padding around image as percentage of dimensions of molecule extent
+        SaveImages (str)     : If Contour images to be saved include kwarg specifying the file path to folder
+    '''
+    
+    # -----------------------------------------------------------Set Variable--------------------------------------------------------- 
+    # Contour data   
+    XSectionX, ZSectionX, scanPosX, forceContourX, forceGridX = XSectionData[:-3]
+    YSectionY, ZSectionY, scanPosY, forceContourY, forceGridY = YSectionData[:-3] 
+    
+    # Initialise surface structure
+    xNumS, yNumS = int(surfaceDims[0]/surfaceSize)+1, int(surfaceDims[1]/surfaceSize)+1
+    xi, yi = int(xNumS/2), int(yNumS/2-2)
+    surfacePosX, surfacePosY = surfacePos.reshape(yNumS, xNumS, 3)[yi,:,[0,2]].T, surfacePos.reshape(yNumS, xNumS, 3)[:,xi,[1,2]]
+    
+    # Tip variables
+    rIndentor, theta, tip_length, r_int, z_int,r_top = tipDims[:-1]
+    # Produce spherical tip with polar coordinates
+    r, phi = np.linspace(-r_top, r_top, 100), np.linspace(-np.pi/2,np.pi/2, 100)   
+    
+    # Set material properties
+    E_true, v = elasticProperties 
+    E_eff     = E_true/(1-v**2) 
+    # Set constant to normalise dimensionaless forces
+    F_dim, maxRF = (E_eff*rIndentor**2), RF.max()/(E_eff*rIndentor**2)    
+    normalizer   = mpl.colors.PowerNorm(0.35, 0, contrast*(maxRF).max() )
+    # Set plot colormap
+    colormap = mpl.colormaps.get_cmap('coolwarm')
+    colormap.set_bad('grey') 
+
+    # Extract xz compontents of force contour- compressed removes masked values
+    Fx, Fxz = np.array(forceContourX[m,:,0].compressed()), np.array(forceContourX[m,:,1].compressed())
+    Fy, Fyz = np.array(forceContourY[m,:,0].compressed()), np.array(forceContourY[m,:,1].compressed())      
+
+    # Connect contour points smoothly with a spline
+    forceSplineX, forceSplineY = UnivariateSpline(Fx, Fxz, s = 2), UnivariateSpline(Fy, Fyz, s = 2)
+    X, Y = np.linspace(scanPosX[0], scanPosX[-1],100), np.linspace(scanPosY[0], scanPosY[-1],100)
+
+
+    # -----------------------------------------------Add padding to image -------------------------------------------------------     
+    # Increase padding to add above surface
+    imagePadding = 2
+    
+    ZPadSectionX, binSize = imagePadding*ZSectionX.max(), (ZSectionX.max()-ZSectionX.min())/len(ZSectionX)
+    ZPadSectionY, binSize = imagePadding*ZSectionY.max(), (ZSectionY.max()-ZSectionY.min())/len(ZSectionY)
+
+    dZX, dZY = abs((int(ZPadSectionY/binSize)+1-len(ZSectionY))), abs((int(ZPadSectionX/binSize)+1-len(ZSectionX)))
+    ZXmask, ZYmask = np.ma.getmask(forceGridX), np.ma.getmask(forceGridY)
+
+    ZXmask = np.pad(ZXmask.T, pad_width= ((round(0), round(dZX)), (0,0) ), mode='constant')   
+    ZYmask = np.pad(ZYmask.T, pad_width= ((round(0), round(dZY)), (0,0) ), mode='constant')  
+
+    ZX = np.pad(forceGridX.T, pad_width= ( (round(0), round(dZX)), (0,0) ), mode='constant')        
+    ZY = np.pad(forceGridY.T, pad_width= ( (round(0), round(dZY)), (0,0) ), mode='constant')    
+
+    ZX, ZY = np.ma.masked_array(ZX, mask = ZXmask ), np.ma.masked_array(ZY, mask = ZYmask )
+    
+    # plt.rcParams['font.size'] = 14
+
+    # Plot of force heatmaps using imshow to directly visualise 2D array
+    # ----------------------------------------------------2D Plots X axis--------------------------------------------------------         
+    fig, ax = plt.subplots(1,1, figsize = (linewidth/2, (1/1.61)*linewidth/2)) 
+       
+    # 2D heat map plot without interpolation
+    im = ax.imshow(ZX/F_dim, origin= 'lower', cmap=colormap, interpolation='bicubic', norm= normalizer, extent = (XSectionX[0], XSectionX[-1], ZSectionX.min(), ZPadSectionX), interpolation_stage = 'rgba')
+       
+    # Plot spline force for contour points, contour points themselves, surface boundary using polar coordinates, and hard sphere tip convolution
+    ax.plot(X,                forceSplineX(X),         '-', color = 'r', lw = 1, label = 'Fitted Fource Contour')
+    ax.plot(scanPosX[:,0],    scanPosX[:,1]-clearance, ':', color = 'r', lw = 1, label = 'Hard Sphere boundary')
+    ax.plot(surfacePosX[:,0], surfacePosX[:,1],        ':', color = 'w', lw = 1, label = 'Surface boundary') 
+
+    # Plot indentor geometry
+    ax.plot(r + scanPosX[int(len(scanPosX)/2),0], Zconical(r, 0, r_int, z_int, theta, rIndentor, tip_length) + scanPosX[int(len(scanPosX)/2),1] -clearance,  color = 'w', lw = 1, label = 'Indentor boundary') 
+
+    # Set legend and axis labels, limits and title
+    ax.set_xlabel(r'x (${\AA}$)')
+    ax.set_ylabel(r'z (${\AA}$)', rotation=90,  labelpad = 5)
+    ax.set_xlim(XSectionX[0], XSectionX[-1])
+    ax.set_ylim(0, ZPadSectionX )
+    ax.set_yticks( np.round(10*np.linspace(0, ZPadSectionX, 3))/10 )
+    ax.axes.set_aspect(1.2) 
+    # ------------------------------------------------Plot color bar ------------------------------------------------------------
+    cbar= fig.colorbar(im, ax= ax , orientation = 'vertical', fraction=0.01675, pad=0.025)
+    cbar.set_ticks(np.array([0, 0.01, 0.03]))
+    cbar.set_label(r'$\frac{F}{E*R^2}$', rotation=0)
+    cbar.ax.yaxis.set_label_coords(7.5, 0.5)
+    cbar.ax.set_ylim(0, 0.03)
+    cbar.minorticks_on() 
+
+    # Optionally save image
+    if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
+        fig.savefig(kwargs['SaveImages'] + os.sep + 'AFM_CrossSectionHeatMap-X.pdf', bbox_inches = 'tight') 
+    plt.show()
+
+    # ----------------------------------------------------2D Plots Y axis--------------------------------------------------------    
+    fig, ax = plt.subplots(1,1, figsize = (linewidth/2, (1/1.61)*linewidth/2)) 
+
+    # 2D heat map plot without interpolation
+    im = ax.imshow(ZY/F_dim, origin= 'lower', cmap=colormap, interpolation='bicubic', norm= normalizer, extent = (YSectionY[0], YSectionY[-1], ZSectionY.min(), ZPadSectionY), interpolation_stage = 'rgba')
+        
+    # Plot spline force for contour points, contour points themselves, surface boundary using polar coordinates, and hard sphere tip convolution
+    ax.plot(Y,                forceSplineY(Y),         '-', color = 'r', lw = 1, label = 'Fitted Fource Contour')
+    ax.plot(scanPosY[:,0],    scanPosY[:,1]-clearance, ':', color = 'r', lw = 1, label = 'Hard Sphere boundary')
+    ax.plot(surfacePosY[:,0], surfacePosY[:,1],        ':', color = 'w', lw = 1, label = 'Surface boundary') 
+
+    # Plot indentor geometry
+    ax.plot(r + scanPosY[int(len(scanPosY)/2),0], Zconical(r, 0, r_int, z_int, theta, rIndentor, tip_length) + scanPosY[int(len(scanPosY)/2),1] -clearance,  color = 'w', lw = 1, label = 'Indentor boundary') 
+    
+    # Set legend and axis labels, limits and title
+    ax.set_xlabel(r'y (${\AA}$)')
+    ax.set_ylabel(r'z (${\AA}$)', rotation=90,  labelpad = 5)
+    ax.set_xlim(YSectionY[0], YSectionY[-1])
+    ax.set_ylim(0, ZPadSectionY )
+    ax.set_yticks( np.round(10*np.linspace(0, ZPadSectionY, 3))/10 )
+    ax.axes.set_aspect('equal') 
+    # ax.tick_params(labelleft=False)
+    
+    # ------------------------------------------------Plot color bar ------------------------------------------------------------
+    cbar= fig.colorbar(im, ax= ax , orientation = 'vertical', fraction=0.01675, pad=0.025)
+    cbar.set_ticks(np.array([0, 0.01, 0.03]))
+    cbar.set_label(r'$\frac{F}{E*R^2}$', rotation=0)
+    cbar.ax.yaxis.set_label_coords(7.5, 0.5)
+    cbar.ax.set_ylim(0, 0.03)
+    cbar.minorticks_on() 
+    
+    
+    # Optionally save image
+    if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
+        fig.savefig(kwargs['SaveImages'] + os.sep + 'AFM_CrossSectionHeatMap-Y.pdf', bbox_inches = 'tight') 
+    # plt.rcParams['font.size'] = 13    
+    plt.show()
+
+# %%
+def ForceProfiles(scanPos, scanDims, binSize, XZ, YZ, indentationForce, force_data, cross_section_height_data, data_length, **kwargs):
+    ''' '''
+    #  -------------------------------------------Initialise variable-----------------------------------------------
+    xNum, yNum = int(scanDims[0]/binSize)+1, int(scanDims[1]/binSize)+1
+    X, Y = scanPos.reshape(yNum, xNum, 3)[:,:,0], scanPos.reshape(yNum, xNum, 3)[:,:,1]
+    X0, Y0 = np.linspace(X[0,0], X[0,-1], 250), np.linspace(Y[0,0], Y[-1,0], 250)
+
+    plt.rcParams['font.size'] = 11
+    #  --------------------------------------------X Profile Plot---------------------------------------------------
+    fig, ax = plt.subplots(1, 1, figsize = (linewidth/2, (1/1.61)*linewidth/2))
+    for i, forceRef in enumerate(indentationForce[::3]):
+        Fx, Fxz = X[0], XZ[i]
+        forceSpline = UnivariateSpline(Fx, Fxz, s = 2) 
+        
+        # plot= ax.plot(Fx,Fxz, 'x')
+        ax.plot(X0, forceSpline(X0), '-',  label='{0:.2f}'.format(forceRef/10), lw=0.75) #color = plot[0].get_color(),
+
+    ax.set_xlabel(r'x (${\AA}$)')
+    ax.set_ylabel(r'z (${\AA}$)')
+    ax.set_xlim(-75, 75)
+    ax.set_ylim(15, 21)
+    ax.set_xticks([-50,0,50])
+    ax.set_yticks([15,20])
+    ax.axes.set_aspect(9.5) 
+    # ax.legend(title = 'Force (pN):', frameon=False, ncol=1, labelspacing=0, loc=[0.95,0.175])
+
+
+    # Optionally save image
+    if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
+        fig.savefig(kwargs['SaveImages'] + os.sep + 'AFM_XProfile.pdf', bbox_inches = 'tight') 
+    plt.show()
+    
+    #  --------------------------------------------Y Profile Plot---------------------------------------------------
+    fig, ax = plt.subplots(1, 1, figsize = (linewidth/2, (1/1.61)*linewidth/2))
+    for i, forceRef in enumerate(indentationForce[1:][::3]):
+        Fy, Fyz      = Y[:,0], YZ[i]
+        forceSpline  = UnivariateSpline(Fy, Fyz, s = 0.01)
+        
+        plot = ax.plot(Y0, forceSpline(Y0), '-', label= '{0:0.2f}'.format(forceRef/10), lw=0.65)
+        # ax.plot(Fy, Fyz, '-', color = plot[0].get_color(), label= '{0:0.2f}'.format(forceRef/10), lw=0.65)
+
+    # for i, forceRef in enumerate(force_data):
+        Y_exp, Z_exp = cross_section_height_data[i+1,:data_length[i+1],0]-np.max(cross_section_height_data[i+1,:data_length[i+1],0])/2-5, cross_section_height_data[i+1,:data_length[i+1],1]
+        ax.plot(Y_exp[::5], Z_exp[::5], '^', color = plot[0].get_color(), ms=3.5)
+
+    ax.set_xlabel(r'y (${\AA}$)')
+    ax.set_ylabel(r'z (${\AA}$)')
+    ax.set_xlim(-75, 75)
+    ax.set_ylim(0, 25)
+    ax.set_xticks([-50,0,50])
+    ax.set_yticks([0,10,20])
+    ax.axes.set_aspect(2.35) 
+    ax.legend(title = 'Force (pN):', title_fontsize = 8, fontsize=8, frameon=False, ncol=1, labelspacing=0, loc=[0.02,0.32])
+
+    # Optionally save image
+    if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
+        fig.savefig(kwargs['SaveImages'] + os.sep + 'AFM_YProfile.pdf', bbox_inches = 'tight') 
+    plt.show()
+    plt.rcParams['font.size'] = 13    
+
+# %%
+def StructureAnalysisPlot(structuralData, indentationForce, force_data, force_height_data,  FWHM_exp, AreaX_exp, **kwargs):
+    ''' '''
+    XZ, YZ, DNAheight, FWHM, Volume, AreaX, AreaY, A = structuralData
+    
+    #  --------------------------------------------Y Profile Plot---------------------------------------------------
+    fig, ax = plt.subplots(figsize = (linewidth/2, 1/1.61*linewidth/2))
+    # ax1, ax2 = ax.twinx(), ax.twinx() 
+    # ax3, ax4 = ax.twinx(), ax.twinx()
+
+    #  --------------------------------------------Y Profile Plot---------------------------------------------------
+    plot0 = ax.plot(indentationForce/10, DNAheight, label = 'DNA Height', color = ax._get_lines.get_next_color())
+    ax.plot(force_height_data[:,0], force_height_data[:,1], '^', label = 'Experimental DNA Height', color = plot0[0].get_color(), ms=3.5)
+
+    # plot1 = ax1.plot(indentationForce/10, FWHM, label = 'FWHM', color = ax._get_lines.get_next_color(), alpha=0.25 )
+    # ax1.plot(force_data, FWHM_exp, ':', label = 'FWHM Exp', color =  plot1[0].get_color(), alpha=0.25 )
+
+    # plot2 = ax2.plot(indentationForce/10, Volume, label = 'Volume', color = ax._get_lines.get_next_color(), alpha=0.25)
+
+    # plot3 = ax3.plot(indentationForce/10, AreaX, label = 'Cross Sections Area X',  color = ax._get_lines.get_next_color(), alpha=0.25)
+    # ax3.plot(force_data, AreaX_exp, ':', label = 'Cross Sections Area X Exp',  color = plot3[0].get_color(), alpha=0.25)
+
+    # plot4 = ax4.plot(indentationForce/10, AreaY, label = 'Cross Sections Area Y',  color = ax._get_lines.get_next_color(), alpha=0.25)
+
+
+
+    #  --------------------------------------------Y Profile Plot---------------------------------------------------
+    # ax1.spines['right'].set_position(('outward', 0))
+    # ax2.spines['right'].set_position(('outward', 70))
+    # ax3.spines['right'].set_position(('outward', 140))
+    # ax4.spines['right'].set_position(('outward', 210))
+
+    ax.axes.set_aspect(10) 
+
+    ax.set_xlabel("Indentation force (pN)")
+    ax.set_ylabel(r"DNA height(${\AA}$)")
+    ax.yaxis.set_label_coords(-0.14, 0.4)
+    # ax1.set_ylabel(r"FWHM (${\AA}$)")
+    # ax2.set_ylabel(r"Volume (${\AA}^3$)")
+    # ax3.set_ylabel(r"Cross Sections Area X (${\AA}^2$)")
+    # ax4.set_ylabel(r"Cross Sections Area Y (${\AA}^2$)")
+    
+    #  --------------------------------------------Y Profile Plot---------------------------------------------------
+    # ax.yaxis.label.set_color(plot0[0].get_color())
+    # ax1.yaxis.label.set_color(plot1[0].get_color())
+    # ax2.yaxis.label.set_color(plot2[0].get_color())
+    # ax3.yaxis.label.set_color(plot3[0].get_color())
+    # ax4.yaxis.label.set_color(plot4[0].get_color())
+
+    handles0, labels0 = ax.get_legend_handles_labels()
+    # handles1, labels1 = ax1.get_legend_handles_labels()
+    # handles2, labels2 = ax2.get_legend_handles_labels()
+    # handles3, labels3 = ax3.get_legend_handles_labels()
+    # handles4, labels4 = ax4.get_legend_handles_labels()
+
+    #  --------------------------------------------Y Profile Plot---------------------------------------------------
+    # ax.legend(handles0+handles1+handles2+handles3+handles4, labels0+labels1+labels2+labels3+labels4, loc='best', ncol=2)  
+    # ax.legend(handles0, labels0, title = False, frameon=False, labelspacing=0,  loc='best', ncol=1, fontsize=13 )  
+
+
+    # Optionally save image
+    if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
+        fig.savefig(kwargs['SaveImages'] + os.sep + 'AFM_StructureAnalysisPlot.pdf', bbox_inches = 'tight') 
+    plt.show()
+
+
+# %%
+def YoungPlot(SectionData, rIndentor, elasticProperties, basePos, **kwargs):
+    '''Function to plot elastic modulus over scan position for each indentor.
+    
+    Args:          
+        E_hertz (arr)           : Array of fitted elastic modulus for each indentation force value over each scan positions for each indentor [Ni,Nb,Nt]
+        indentorRadius (arr)    : Array of indentor radii of spherical tip portion varied for seperate  simulations
+        elasticProperties (arr) : Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]
+        basePos (int)           : Index of position along scan to consider vatioation in fitted E against force
+    '''
+    # Set constant to normalise dimensionaless forces
+    E_true, v = elasticProperties    
+    E_eff = E_true/(1-v**2)
+    F_dim = (E_eff*rIndentor**2)
+
+    scanPos, E_hertz, E_contour, RF = SectionData[2],SectionData[-3],SectionData[-2],SectionData[-1] 
+
+    # ------------------------------------------------Plot 1------------------------------------------------------------------   
+    fig, ax = plt.subplots(1, 1, figsize = (linewidth/2, (1/1.61)*linewidth/2) )
+
+    ax.plot(scanPos[:,0], E_contour/E_true, lw=1 )
+    # Expected elastic modulus value
+    ax.plot(scanPos[:,0], scanPos[:,0]**0, ':', color = 'k', lw = 1)
+
+    # Set axis label and legend  
+    ax.set_xlabel(r'$x$', labelpad=5)
+    ax.set_ylabel(r'$\frac{E_{AFM}}{E_{Sample}}$', fontsize=16)
+    ax.set_ylim(0, 1.3)
+
+    # ax.set_yticks(np.round(10*np.linspace(0,1,2))/10)
+    # ax.set_yticks(np.round(10*np.linspace(0,1,2))/10)
+    # ax.legend(frameon=False, loc=[0.25, -0.05], fontsize=11, labelspacing=0.2, handletextpad=0.3) 
+
+    # Optionally save image
+    if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
+        fig.savefig(kwargs['SaveImages'] + os.sep + 'AFM_YoungsModulusPlot1.pdf', bbox_inches = 'tight') 
+    plt.show()
+    # ------------------------------------------------Plot 2 ------------------------------------------------------------------   
+    fig, ax = plt.subplots(1, 1, figsize = (linewidth/2, (1/1.61)*linewidth/2) )
+
+    # Masking zero values in force
+    RF = np.ma.masked_equal(RF[basePos], 0)
+    E1 = np.ma.masked_array(E_hertz[basePos], mask = np.ma.getmask(RF))
+    E2 = np.ma.masked_array(E_hertz[basePos-10], mask = np.ma.getmask(RF))
+
+    # Plot fitted youngs modulus for given indentation force
+    ax.plot(RF/F_dim, E1/E_true, lw=1)
+    ax.plot(RF/F_dim, E2/E_true, ':', color = plt.gca().lines[-1].get_color(), lw=1)
+        
+    # Expected elastic modulus value
+    ax.plot([0,1000], [1,1], ':', color = 'k', lw = 1)
+
+    # Set axis label and legend  
+    ax.set_xlabel(r'$\frac{F}{E^*R^2}$', labelpad=5, fontsize=16)
+    ax.set_ylabel(r'$\frac{E_{AFM}}{E_{Sample}}$', fontsize=16)
+    # ax.set_xlim(5e-3,5)
+    ax.set_ylim(0, 1.35)
+
+    ax.set_yticks(np.round(10*np.linspace(0,1,2))/10)
+    ax.set_xscale('log')    
+
+    # Optionally save image
+    if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
+        fig.savefig(kwargs['SaveImages'] + os.sep + 'AFM_YoungsModulusPlot2.pdf', bbox_inches = 'tight') 
+    plt.show()
+
+
+# %%
 def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, subData, 
                   pdb, rotation, surfaceApprox, indentorType, rIndentor, theta_degrees, tip_length, 
                   indentionDepth, forceRef, contrast, binSize, clearance, elasticProperties, meshSurface, meshBase, meshIndentor, 
@@ -1545,13 +2642,13 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
     
     Args:
         remote_server (list)   : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]:
-                                \ -  host (str):     Hostname of the server to connect to
-                                \ -  port (int):     Server port to connect to 
-                                \ -  username (str): Username to authenticate as (defaults to the current local username)        
-                                \ -  password (str): Used for password authentication, None if ssh-key is used; is also used for private key decryption if passphrase is not given.
-                                \ -  sshkey (str):   Path to private key for keyexchange if password not used, None if not used
-                                \ -  home (str):     Path to home directory on remote server
-                                \ -  scratch (str):  Path to scratch directory on remote server
+                                \n-  host (str):     Hostname of the server to connect to
+                                \n-  port (int):     Server port to connect to 
+                                \n-  username (str): Username to authenticate as (defaults to the current local username)        
+                                \n-  password (str): Used for password authentication, None if ssh-key is used; is also used for private key decryption if passphrase is not given.
+                                \n-  sshkey (str):   Path to private key for keyexchange if password not used, None if not used
+                                \n-  home (str):     Path to home directory on remote server
+                                \n-  scratch (str):  Path to scratch directory on remote server
         remotePath (str)       : Path to remote file/directory
         localPath (str)        : Path to local file/directory
         abqCommand (str)       : Abaqus command to execute and run script
@@ -1581,7 +2678,7 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
         CustomPDB                : Extract data from local custom pd as opposed to from PDB online
  
         Submission (str)         : Type of submission, whether submit pararlell scripts or single serial script for scan locations. Set submission as 'serial'/ 'paralell' or False if no submisson {Default:'serial'}
-        ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
+        ProxyJump (obj)          : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
         Transfer (bool)          : If false skip file transfer step of simulation {Default: True}
         Part (bool)              : If false skip part creation step of simulation {Default: True}
         Input (bool)             : If false skip input file creation step of simulation {Default: True}
@@ -1630,11 +2727,11 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
         ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scanPos, scanDims, variables, baseDims, tipDims, indentorType, elasticProperties)
 
         # Set return variables as None if postprocessing not run
-        U2, RF = None, None
+        ErrorMask, U2, RF = None, None, None
         t1 = time.time()
 
         # Print data
-        print('Preprocessing Complete - ' + str(timedelta(seconds=t1-t0)) )     
+        print('Preprocessing Complete : ' + str(timedelta(seconds=t1-t0)) )     
         print('Number of Scan Positions:', len(clipped_scanPos))
         
         
@@ -1664,20 +2761,20 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
             
         # If file missing prompt user to import/ produce files 
         except:
-            print('No Simulation files available, run preprocessing or import data')
-              
+            raise Exception('No Simulation files or incomplete data available, run preprocessing or import data')
+
 
     #  ----------------------------------------------------Remote Simulation-------------------------------------------------------  
     if 'Submission' not in kwargs.keys() or kwargs['Submission'] != False: 
         # Set return variables as None if postprocessing not run
-        U2, RF = None, None
+        ErrorMask, U2, RF = None, None, None
         
         # SSH to remote cluster to perform ABAQUS simulation and analysis from scripts and data files 
         csvfiles = ("atom_coords.csv","atom_elements.csv","atom_radius_keys.csv", "atom_radius_values.csv", 
-                    "clipped_scanPos.csv", "scanPos.csv", "scanDims","variables.csv","baseDims.csv", "tipDims.csv", "indentorType.txt", "elasticProperties.csv")
+                    "clipped_scanPos.csv", "scanPos.csv", "scanDims.csv","variables.csv","baseDims.csv", "tipDims.csv", "indentorType.txt", "elasticProperties.csv")
         abqfiles = ('AFMSurfaceModel.py', 'AFMRasterScan.py', 'AFMODBAnalysis.py')
     
-        RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, abqCommand, fileName, subData,  clipped_scanPos, scanPos, scanDims, binSize, clearance, **kwargs)  
+        RemoteSubmission(remote_server, remotePath, localPath, csvfiles, abqfiles, abqCommand, fileName, subData, scanPos, clipped_scanPos, scanDims, binSize, clearance,  **kwargs)  
         
         
     #  -------------------------------------------------- Post-Processing--------------------------------------------------------  
@@ -1693,7 +2790,7 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
             
         # If file missing prompt user to import/ produce files 
         except:
-            print('Missing Simulation files, run preprocessing or import data')
+            raise Exception('Missing Simulation files, run preprocessing or import data')
        
         #  ---------------------------------------------------- Data-Processing---------------------------------------------------  
         # Process simulation data to include full range of scan positions
@@ -1711,9 +2808,9 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
     
     # Return final time of simulation
     T1 = time.time()
-    print('Simulation Complete - ' + str(timedelta(seconds=T1-T0)) )
+    print('Simulation Complete : ' + str(timedelta(seconds=T1-T0)) )
     
     if 'ReturnData' in kwargs.keys() and kwargs['ReturnData'] == True:
-        return U2, RF, scanPos, scanDims, baseDims, variables 
+        return U2, RF, ErrorMask, scanPos, scanDims, baseDims, variables 
     else:
         None
