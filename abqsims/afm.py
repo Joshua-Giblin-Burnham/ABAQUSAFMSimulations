@@ -98,24 +98,26 @@ def PDB(pdbid, localPath, **kwargs):
     pdbl       = PDBList()
     parser     = MMCIFParser(QUIET=True)
     pdb_parser = PDBParser(QUIET=True,PERMISSIVE=1)
-    
-    # Retrieves PDB file from 4 letter code using Bio.python
-    pdbl.retrieve_pdb_file(pdbid)
-    
-    ### Creating a folder on the Users system- location is the same as the Notebook file's
-    split_pdbid = list(pdbid)
-    structure_file_folder = str(split_pdbid[1]) + str(split_pdbid[2])
-    
-    if 'CustomPDB' in kwargs.keys() and kwargs['CustomPDB'] == True:
-        # Retrieving file from the location it is saved in. os.sep set `the_slashes` as '/' for MAC and Google Colab or '//' for Windows
-        file_loc = localPath + os.sep + pdbid + '.pdb'
+
+
+    if 'CustomPDB' in kwargs.keys() and kwargs['CustomPDB'] != False:
+        # Retrieving file from the location defined in kwargs
+        file_loc = kwargs['CustomPDB']
         
         # Defining structure i.e. '4 letter PDB ID code' and 'location'
-        structure = pdb_parser.get_structure(pdbid, file_loc) 
-        
+        structure = pdb_parser.get_structure(pdbid, file_loc)     
+
     else:
-        # Retrieving file from the location it is saved in. 
-        file_loc = localPath + os.sep + structure_file_folder + os.sep + pdbid + '.cif'
+        ### Creating a folder on the Users system- location is the same as the Notebook file's
+        split_pdbid = list(pdbid) 
+        # os.sep set `the_slashes` as '/' for MAC and Google Colab or '//' for Windows
+        structure_file_folder = localPath + os.sep + str(split_pdbid[1]) + str(split_pdbid[2])
+
+        # Retrieves PDB file from 4 letter code using Bio.python
+        pdbl.retrieve_pdb_file(pdbid, obsolete=False, pdir = structure_file_folder )
+        
+       # Retrieving file from the location it is saved in. 
+        file_loc = structure_file_folder + os.sep + pdbid + '.cif'
         
         # Defining structure i.e. '4 letter PDB ID code' and 'location'
         structure = parser.get_structure(pdbid, file_loc) 
