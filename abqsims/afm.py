@@ -556,49 +556,53 @@ def DotPlot(atom_coord, atom_radius, atom_element, scanPos, clipped_scanPos, pdb
 
 # %%
 
-def ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scanPos, scanDims, variables, baseDims, tipDims, indentorType, elasticProperties ):
+def ExportVariables(localPath, atom_coord, atom_element, atom_radius, clipped_scanPos, scanPos, scanDims, variables, baseDims, tipDims, indentorType, elasticProperties ):
     '''Export simulation variables as csv and txt files to load in abaqus python scripts.
     
-        Args:
-            atom_coord (arr)       :  Array of coordinates [x,y,z] for atoms in biomolecule 
-            atom_element (arr)     :  Array of elements names(str) for atoms in biomolecule 
-            atom_radius (dict)     :  Dictionary containing van der waals radii each the element in the biomolecule 
-            clipped_scanPos (arr)  :  Array of clipped (containing only positions where tip and molecule interact) scan positions and initial heights [x,y,z] to image biomolecule            
-            scanPos (arr)          :  Array of coordinates [x,y,z] of scan positions to image biomolecule and initial heights/ hard sphere boundary
-            scanDims (arr)         : Geometric parameters for defining scan dimensiond [width, height] 
-            variables (list)       :  List of simulation variables: [timePeriod, timeInterval, binSize, meshSurface, meshBase, meshIndentor, indentionDepth, surfaceHeight]
-            baseDims (arr)         :  Geometric parameters for defining base/ substrate structure [width, height, depth] 
-            tipDims (list)         :  Geometric parameters for defining capped tip structure     
-            indentorType (str)     :  String defining indentor type (Spherical or Capped)
-            elasticProperties(arr) :  Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]
+    Args:
+        localPath (str)      : Path to local file/directory
+        atom_coord (arr)       :  Array of coordinates [x,y,z] for atoms in biomolecule 
+        atom_element (arr)     :  Array of elements names(str) for atoms in biomolecule 
+        atom_radius (dict)     :  Dictionary containing van der waals radii each the element in the biomolecule 
+        clipped_scanPos (arr)  :  Array of clipped (containing only positions where tip and molecule interact) scan positions and initial heights [x,y,z] to image biomolecule            
+        scanPos (arr)          :  Array of coordinates [x,y,z] of scan positions to image biomolecule and initial heights/ hard sphere boundary
+        scanDims (arr)         : Geometric parameters for defining scan dimensiond [width, height] 
+        variables (list)       :  List of simulation variables: [timePeriod, timeInterval, binSize, meshSurface, meshBase, meshIndentor, indentionDepth, surfaceHeight]
+        baseDims (arr)         :  Geometric parameters for defining base/ substrate structure [width, height, depth] 
+        tipDims (list)         :  Geometric parameters for defining capped tip structure     
+        indentorType (str)     :  String defining indentor type (Spherical or Capped)
+        elasticProperties(arr) :  Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]
     '''
 
     ### Creating a folder on the Users system
-    os.makedirs('data', exist_ok=True)
+    os.makedirs(localPath + os.sep + 'data', exist_ok=True)
 
-    np.savetxt("data"+os.sep+"atom_coords.csv", atom_coord, delimiter=",")
-    np.savetxt("data"+os.sep+"atom_elements.csv", atom_element, fmt='%s', delimiter=",")
+    np.savetxt(localPath + os.sep + 'data' +os.sep+'atom_coords.csv', atom_coord, delimiter=",")
+    np.savetxt(localPath + os.sep + 'data' +os.sep+'atom_elements.csv', atom_element, fmt='%s', delimiter=",")
 
-    np.savetxt("data"+os.sep+"atom_radius_keys.csv", list(atom_radius.keys()), fmt='%s', delimiter=",")
-    np.savetxt("data"+os.sep+"atom_radius_values.csv", list(atom_radius.values()), delimiter=",")
+    np.savetxt(localPath + os.sep + 'data' +os.sep+'atom_radius_keys.csv', list(atom_radius.keys()), fmt='%s', delimiter=",")
+    np.savetxt(localPath + os.sep + 'data' +os.sep+'atom_radius_values.csv', list(atom_radius.values()), delimiter=",")
 
-    np.savetxt("data"+os.sep+"clipped_scanPos.csv", clipped_scanPos, delimiter=",")
-    np.savetxt("data"+os.sep+"scanPos.csv", scanPos, fmt='%s', delimiter=",")
-    np.savetxt("data"+os.sep+"scanDims.csv", scanDims, fmt='%s', delimiter=",")
+    np.savetxt(localPath + os.sep + 'data' +os.sep+'clipped_scanPos.csv', clipped_scanPos, delimiter=",")
+    np.savetxt(localPath + os.sep + 'data' +os.sep+'scanPos.csv', scanPos, fmt='%s', delimiter=",")
+    np.savetxt(localPath + os.sep + 'data' +os.sep+'scanDims.csv', scanDims, fmt='%s', delimiter=",")
 
-    np.savetxt("data"+os.sep+"variables.csv", variables, fmt='%s', delimiter=",")
-    np.savetxt("data"+os.sep+"baseDims.csv", baseDims, fmt='%s', delimiter=",")
-    np.savetxt("data"+os.sep+"tipDims.csv", tipDims, fmt='%s', delimiter=",")
+    np.savetxt(localPath + os.sep + 'data' +os.sep+'variables.csv', variables, fmt='%s', delimiter=",")
+    np.savetxt(localPath + os.sep + 'data' +os.sep+'baseDims.csv', baseDims, fmt='%s', delimiter=",")
+    np.savetxt(localPath + os.sep + 'data' +os.sep+'tipDims.csv', tipDims, fmt='%s', delimiter=",")
 
-    np.savetxt("data"+os.sep+"elasticProperties.csv", elasticProperties, fmt='%s', delimiter=",")
-    with open("data"+os.sep+'indentorType.txt', 'w', newline = '\n') as f:
+    np.savetxt(localPath + os.sep + 'data' +os.sep+'elasticProperties.csv', elasticProperties, fmt='%s', delimiter=",")
+    with open(localPath + os.sep + 'data' +os.sep+'indentorType.txt', 'w', newline = '\n') as f:
         f.write(indentorType)
 
 # %%
-def ImportVariables():
+def ImportVariables(localPath, ):
     '''Import simulation geometry variables from csv files.
 
-    Returns:
+    Args:
+        localPath (str)      : Path to local file/directory
+
+    Returns:        
         atom_coord (arr)      : Array of coordinates [x,y,z] for atoms in biomolecule 
         atom_element (arr)    : Array of elements names(str) for atoms in biomolecule 
         atom_radius (dict)    : Dictionary containing van der waals radii each the element in the biomolecule 
@@ -612,18 +616,18 @@ def ImportVariables():
     ### Creating a folder on the Users system
     os.makedirs('data', exist_ok=True)
  
-    atom_coord      = np.loadtxt('data' + os.sep + 'atom_coords.csv', delimiter=",")
-    atom_element    = np.loadtxt('data' + os.sep + 'atom_elements.csv', dtype = 'str', delimiter=",")
+    atom_coord      = np.loadtxt(localPath + os.sep + 'data' + os.sep + 'atom_coords.csv', delimiter=",")
+    atom_element    = np.loadtxt(localPath + os.sep + 'data' + os.sep + 'atom_elements.csv', dtype = 'str', delimiter=",")
 
-    keys            = np.loadtxt('data' + os.sep + 'atom_radius_keys.csv', dtype = 'str', delimiter=",")
-    values          = np.loadtxt('data' + os.sep + 'atom_radius_values.csv', delimiter=",")
+    keys            = np.loadtxt(localPath + os.sep + 'data' + os.sep + 'atom_radius_keys.csv', dtype = 'str', delimiter=",")
+    values          = np.loadtxt(localPath + os.sep + 'data' + os.sep + 'atom_radius_values.csv', delimiter=",")
     atom_radius     = {keys[i]:values[i] for i in range(len(keys))}
 
-    variables       = np.loadtxt('data' + os.sep + 'variables.csv', delimiter=",")
-    baseDims        = np.loadtxt('data' + os.sep + 'baseDims.csv', delimiter=",")
-    scanDims        = np.loadtxt('data' + os.sep + 'scanDims.csv', delimiter=",")
-    scanPos         = np.loadtxt('data' + os.sep + 'scanPos.csv', delimiter=",")
-    clipped_scanPos = np.loadtxt('data' + os.sep + 'clipped_scanPos.csv', delimiter=",")
+    variables       = np.loadtxt(localPath + os.sep + 'data' + os.sep + 'variables.csv', delimiter=",")
+    baseDims        = np.loadtxt(localPath + os.sep + 'data' + os.sep + 'baseDims.csv', delimiter=",")
+    scanDims        = np.loadtxt(localPath + os.sep + 'data' + os.sep + 'scanDims.csv', delimiter=",")
+    scanPos         = np.loadtxt(localPath + os.sep + 'data' + os.sep + 'scanPos.csv', delimiter=",")
+    clipped_scanPos = np.loadtxt(localPath + os.sep + 'data' + os.sep + 'clipped_scanPos.csv', delimiter=",")
 
     return atom_coord, atom_element, atom_radius, variables, baseDims, scanPos, clipped_scanPos, scanDims
 
@@ -840,7 +844,7 @@ def BatchSubmission(remote_server, fileName, subData, clipped_scanPos, scanPos, 
     
     # If paralell mode, submit  individual scripts for individual scan locations
     if 'Submission' in kwargs and kwargs['Submission'] == 'paralell':
-        for i in range(len( len(clipped_scanPos))):
+        for i in range(len(clipped_scanPos)):
             # Job name set as each input file name as -N jobname is used as input variable in script
             jobName = fileName+str(int(i))
             # Command to run individual jobs
@@ -931,7 +935,7 @@ def RemoteFTPFiles(remote_server, files, remotePath, localPath, **kwargs):
 
     # FTPCLient takes a paramiko transport as an argument- copy content from remote directory
     ftp_client=ssh_client.open_sftp()
-    ftp_client.get(remotePath+'/'+files, localPath + os.sep + 'data'+ os.sep + files)  
+    ftp_client.get(remotePath+'/'+files, localPath + os.sep + 'data' + os.sep + files)  
     ftp_client.close()
 
 # %% [markdown]
@@ -2726,7 +2730,7 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
     
         # Set list of simulation variables and export to current directory
         variables = [timePeriod, timeInterval, binSize, meshSurface, meshBase, meshIndentor, indentionDepth, surfaceHeight]
-        ExportVariables(atom_coord, atom_element, atom_radius, clipped_scanPos, scanPos, scanDims, variables, baseDims, tipDims, indentorType, elasticProperties)
+        ExportVariables(localPath, atom_coord, atom_element, atom_radius, clipped_scanPos, scanPos, scanDims, variables, baseDims, tipDims, indentorType, elasticProperties)
 
         # Set return variables as None if postprocessing not run
         ErrorMask, U2, RF = None, None, None
@@ -2758,7 +2762,7 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
     else:
         # Check if simulation files are accessible in curent directory to use if pre=processing skipped
         try:
-            atom_coord, atom_element, atom_radius, variables, baseDims, scanPos, clipped_scanPos, scanDims     = ImportVariables()
+            atom_coord, atom_element, atom_radius, variables, baseDims, scanPos, clipped_scanPos, scanDims = ImportVariables(localPath)
             timePeriod, timeInterval, binSize, meshSurface, meshBase, meshIndentor, indentionDepth, surfaceHeight = variables
             
         # If file missing prompt user to import/ produce files 
@@ -2784,11 +2788,11 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
         
         # Check if all simulation files are accessible in curent directory for post-processing
         try:
-            atom_coord, atom_element, atom_radius, variables, baseDims, scanPos, clipped_scanPos, scanDims = ImportVariables()
+            atom_coord, atom_element, atom_radius, variables, baseDims, scanPos, clipped_scanPos, scanDims = ImportVariables(localPath)
             timePeriod, timeInterval, binSize, meshSurface, meshBase, meshIndentor, indentionDepth, surfaceHeight = variables
-            clipped_U2 = np.array(np.loadtxt('data' + os.sep + 'U2_Results.csv', delimiter=","))
-            clipped_RF = np.array(np.loadtxt('data' + os.sep +'RF_Results.csv', delimiter=","))
-            clipped_ErrorMask = np.array(np.loadtxt('data' + os.sep +'ErrorMask.csv', delimiter=","))
+            clipped_U2 = np.array(np.loadtxt(localPath + os.sep + 'data' + os.sep + 'U2_Results.csv', delimiter=","))
+            clipped_RF = np.array(np.loadtxt(localPath + os.sep + 'data' + os.sep +'RF_Results.csv', delimiter=","))
+            clipped_ErrorMask = np.array(np.loadtxt(localPath + os.sep + 'data' + os.sep +'ErrorMask.csv', delimiter=","))
             
         # If file missing prompt user to import/ produce files 
         except:
