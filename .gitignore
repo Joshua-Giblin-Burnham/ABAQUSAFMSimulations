@@ -19,7 +19,7 @@ PDFEditor.py
 
 # Distribution / packaging
 obsolete/
-misc/
+# misc/
 experimental-data
 ssh/
 .Python
