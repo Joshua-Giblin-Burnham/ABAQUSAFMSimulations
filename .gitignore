@@ -12,7 +12,7 @@ PDFEditor.py
 
 # Data outputs
 *.txt
-*.csv
+# *.csv
 *.sh
 *.cif
 *.pdb
