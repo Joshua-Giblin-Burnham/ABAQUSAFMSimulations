@@ -76,8 +76,15 @@ atom_coord, atom_element, atom_radius, variables, baseDims, scanPos, clipped_sca
 timePeriod, timeInterval, binSize, meshSurface, meshBase, meshIndentor, indentionDepth, surfaceHeight = variables
 clearance = 0.15
 
+
 xNum, yNum = int(scanDims[0]/binSize)+1, int(scanDims[1]/binSize)+1
 xi, yi = int(xNum/2), int(yNum/2)
+
+scanPosX, scanPosY = scanPos.reshape(yNum, xNum, 3)[yi,:,[0,2]].T, scanPos.reshape(yNum, xNum, 3)[:,xi,[1,2]]
+
+
+
+
 
 
 
@@ -171,9 +178,9 @@ for i, v in enumerate(clipped_indices):
 
 fig, ax = plt.subplots(1,1,figsize=(10,5))
 for i, v in enumerate(clipped_indices):
-    x = np.linspace(np.min(sortedU2[i]),np.max(sortedU2[i]),50)
+    x = np.linspace(np.min(sortedU2[i]), np.max(sortedU2[i]),50)
     im = ax.plot(x, g[v](x))
-    ax.plot( sortedU2[i], sortedRF[i],':', color= im[0].get_color())
+    ax.plot(sortedU2[i], sortedRF[i], ':', color=im[0].get_color())
 plt.show()
 
 
@@ -195,7 +202,7 @@ for i in range(N):
 f = {}
 for i, v in enumerate(clipped_indices):
     # print(sortedU2[i])
-    f[v] = interpolate.UnivariateSpline(sortedRF[i], sortedU2[i], s=0.5, k=1)
+    f[v] = interpolate.UnivariateSpline(sortedRF[i], sortedU2[i], s=2, k=1)
 
 
 fig, ax = plt.subplots(1,1,figsize=(10,5))
@@ -288,6 +295,22 @@ for i in range(Nf):
 
 
 
+#%%
+# Produce true surface scan
+surfaceSize = 1
+temp_U2, temp_RF, temp_ErrorMask, surfacePos, surfaceDims, temp_baseDims, temp_variables = AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, subData, 
+pdb, rotation, surfaceApprox, indentorType, 1, 5, tip_length, indentionDepth, forceRef, contrast, surfaceSize, 0, elasticProperties, meshSurface, meshBase, 
+meshIndentor,  timePeriod, timeInterval, Preprocess  = True, Submission  = False, Postprocess = False, ReturnData  = True, ClippedScan  = [0.45,1])
+
+# Initialise surface structure
+xNumS, yNumS = int(surfaceDims[0]/surfaceSize)+1, int(surfaceDims[1]/surfaceSize)+1
+xsi, ysi = int(xNumS/2), int(yNumS/2-2)
+surfacePosX, surfacePosY = surfacePos.reshape(yNumS, xNumS, 3)[ysi,:,[0,2]].T, surfacePos.reshape(yNumS, xNumS, 3)[:,xsi,[1,2]]
+
+
+
+
+
 
 
 # %%#########################################################################################
@@ -302,6 +325,7 @@ Xi, Yi = [clipped_scanPos[i,0] for i in split_index[0]], [clipped_scanPos[i,1] f
 for j, forceRef in enumerate(indentationForce):
     XZ[j] = np.array([f[split_index[0][Xi.index(x)]](forceRef/10)  if x in Xi else 0  for x in X ])
     YZ[j] = np.array([f[split_index[1][Yi.index(y)]](forceRef)     if y in Yi else 0  for y in Y ])    
+
 
 DNAheight = np.array([[np.max(XZ[i]),np.max(YZ[i])] for i, forceRef in enumerate(indentationForce)])
 
@@ -330,15 +354,22 @@ ax.set_xlim(-75, 75)
 # ax.set_ylim(15, 22)
 ax.set_xticks([-50,0,50])
 ax.set_yticks([15,20])
-ax.axes.set_aspect(9.5) 
+ax.axes.set_aspect(7) 
 # ax.legend(title = 'Force (pN):', frameon=False, ncol=1, labelspacing=0, loc=[0.95,0.175])
 
-# # Optionally save image
-# if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
-#     fig.savefig(kwargs['SaveImages'] + os.sep + 'AFM_XProfile.pdf', bbox_inches = 'tight') 
-# plt.show()
+fig.savefig('/mnt/c/Users/Joshg/Documents/Manuscript_Figures/' + os.sep + 'AFM_XProfile.pdf', bbox_inches = 'tight') 
+plt.show()
 
+
+
+
+
+
+
+# %%
 #  --------------------------------------------Y Profile Plot---------------------------------------------------
+
+plt.rcParams['figure.dpi'] = 2560
 fig, ax = plt.subplots(1, 1, figsize = (linewidth/2, (1/1.61)*linewidth/2))
 
 for i, forceRef in enumerate(indentationForce[::3]):
@@ -346,15 +377,19 @@ for i, forceRef in enumerate(indentationForce[::3]):
     forceSpline  = UnivariateSpline(Fy,Fyz, s = 2, k = 3)
     
     plot = ax.plot(Y0[::-1], forceSpline(Y0), '-', label= '{0:0.2f}'.format(forceRef/10), lw=0.85)
-    # ax.plot(Fy, Fyz, 'x', color = plot[0].get_color(), label= '{0:0.2f}'.format(forceRef/10), lw=0.65)
+    # ax.plot(Fy[::-1], Fyz, 'x', color = plot[0].get_color(), label= '{0:0.2f}'.format(forceRef/10), lw=0.65, ms=2)
 
 # for i, forceRef in enumerate(force_data):
     if i == 1:
-        Y_exp, Z_exp = cross_section_height_data[i+1,:data_length[i+1],0]-95, cross_section_height_data[i+1,:data_length[i+1],1]
+        Y_exp, Z_exp = cross_section_height_data[i+1,:data_length[i+1],0]-100, cross_section_height_data[i+1,:data_length[i+1],1]
     else: 
         Y_exp, Z_exp = cross_section_height_data[i+1,:data_length[i+1],0]-90, cross_section_height_data[i+1,:data_length[i+1],1]
 
-    ax.plot(Y_exp[::5], Z_exp[::5], '^', color = plot[0].get_color(), ms=3)
+    ax.plot(Y_exp[::5], Z_exp[::5], '^', color = plot[0].get_color(), ms=2.5)
+    # ax.plot(Y_exp[::5], Z_exp[::5], ':', color = plot[0].get_color(),  lw=0.85)
+# ax.plot(surfacePosY[:,0][::-1], surfacePosY[:,1], ':', color = 'k', lw = 1, label = 'DNA Surface ') 
+# ax.plot(scanPosY[:,0],    scanPosY[:,1]-clearance, 'x', color = 'r', lw = 1, ms=2)#, label = 'Hard Sphere boundary')
+ax.plot(scanPosY[:,0],    scanPosY[:,1]-clearance, ':', color = 'r', lw = 1, label = 'Hard sphere \n boundary ')
 
 ax.set_xlabel(r'y (${\AA}$)')
 ax.set_ylabel(r'z (${\AA}$)')
@@ -363,14 +398,26 @@ ax.set_ylim(0, 22)
 ax.set_xticks([-50,0,50])
 ax.set_yticks([0,10,20])
 ax.axes.set_aspect(2.35) 
-ax.legend(title = 'Force (pN):', title_fontsize = 8, fontsize=8, frameon=False, ncol=1, labelspacing=0, loc=[0.02,0.32])
 
-# # Optionally save image
-# if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
-#     fig.savefig(kwargs['SaveImages'] + os.sep + 'AFM_YProfile.pdf', bbox_inches = 'tight') 
+# ax.legend(title = 'Force (pN):', title_fontsize = 8, fontsize=8, frameon=False, ncol=1, labelspacing=0, loc=[0.62,0.32])
+
+handles, labels = ax.get_legend_handles_labels()
+
+# Create a legend for the first line.
+first_legend = ax.legend(handles=handles[:-1], labels=labels[:-1],title = 'Force (pN):', title_fontsize = 8, 
+                         fontsize=8, frameon=False, ncol=1, labelspacing=0, loc=[0.02,0.32])
+
+# Add the legend manually to the Axes.
+ax.add_artist(first_legend)
+
+# Create another legend for the second line.
+ax.legend(handles=handles[-1:], labels=labels[-1:], fontsize=7, frameon=False, 
+          ncol=1, labelspacing=0, loc=[0.625,0.6])
+
+fig.savefig('/mnt/c/Users/Joshg/Documents/Manuscript_Figures/'+ os.sep + 'AFM_YProfile.pdf', bbox_inches = 'tight') 
 # plt.show()
 plt.rcParams['font.size'] = 13    
-
+plt.rcParams['figure.dpi'] = 256
 
 
 
@@ -389,38 +436,21 @@ plt.rcParams['font.size'] = 13
 
 # %%
 
-#  --------------------------------------------Y Profile Plot---------------------------------------------------
+#  --------------------------------------------DNA Height Plot---------------------------------------------------
 fig, ax = plt.subplots(figsize = (linewidth/2, 1/1.61*linewidth/2))
 
 plot0 = ax.plot(indentationForce/10, DNAheight[:,1], label = 'DNA Height', color = ax._get_lines.get_next_color())
-ax.plot(force_height_data[:,0], force_height_data[:,1], '^', label = 'Experimental DNA Height', color = plot0[0].get_color(), ms=3.5)
+ax.plot(force_height_data[:,0], force_height_data[:,1], '^', label = 'Experimental DNA Height', color = plot0[0].get_color(), ms=2.5)
 
 ax.axes.set_aspect(10) 
 ax.set_xlabel("Indentation force (pN)")
 ax.set_ylabel(r"DNA height(${\AA}$)")
-ax.yaxis.set_label_coords(-0.14, 0.4)
+# ax.yaxis.set_label_coords(-0.14, 0.4)
                             
 handles0, labels0 = ax.get_legend_handles_labels()
 
-    # Optionally save image
-    # if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
-    #     fig.savefig(kwargs['SaveImages'] + os.sep + 'AFM_StructureAnalysisPlot.pdf', bbox_inches = 'tight') 
-    # plt.show()
-
-
-
-
-
-
-
-
-
-#%%
-
-surfaceSize = 1
-temp_U2, temp_RF, temp_ErrorMask, surfacePos, surfaceDims, temp_baseDims, temp_variables = AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, subData, 
-pdb, rotation, surfaceApprox, indentorType, 1, 5, tip_length, indentionDepth, forceRef, contrast, surfaceSize, 0, elasticProperties, meshSurface, meshBase, 
-meshIndentor,  timePeriod, timeInterval, Preprocess  = True, Submission  = False, Postprocess = False, ReturnData  = True, ClippedScan  = [0.45,1])
+fig.savefig('/mnt/c/Users/Joshg/Documents/Manuscript_Figures/' + os.sep + 'AFM_StructureAnalysisPlot.pdf', bbox_inches = 'tight') 
+plt.show()
 
 
 
@@ -433,12 +463,6 @@ meshIndentor,  timePeriod, timeInterval, Preprocess  = True, Submission  = False
 
 #%%
 # -----------------------------------------------------------Set Variable--------------------------------------------------------- 
-# Initialise surface structure
-xNumS, yNumS = int(surfaceDims[0]/surfaceSize)+1, int(surfaceDims[1]/surfaceSize)+1
-xsi, ysi = int(xNumS/2), int(yNumS/2-2)
-surfacePosX, surfacePosY = surfacePos.reshape(yNumS, xNumS, 3)[ysi,:,[0,2]].T, surfacePos.reshape(yNumS, xNumS, 3)[:,xsi,[1,2]]
-
-
 # Tip variables
 rIndentor, theta, tip_length, r_int, z_int,r_top = tipDims[:-1]
 # Produce spherical tip with polar coordinates
@@ -454,25 +478,27 @@ normalizer   = mpl.colors.PowerNorm(0.35, 0, contrast*(maxRF).max() )
 colormap = mpl.colormaps.get_cmap('coolwarm')
 colormap.set_bad('grey') 
 
-scanPosX, scanPosY = scanPos.reshape(yNum, xNum, 3)[yi,:,[0,2]].T, scanPos.reshape(yNum, xNum, 3)[:,xi,[1,2]]
+
 
 Zmax=40
 Nz = 50
 ZX, ZY = np.zeros([Nz,len(X)]), np.zeros([Nz,len(Y)])
 
 for i , z in enumerate(np.linspace(0,Zmax,Nz)):
-    ZX[j] = np.array([g[split_index[0][Xi.index(x)]](z)  if x in Xi else 0  for x in X ])
-    ZY[j] = np.array([g[split_index[1][Yi.index(y)]](z)  if y in Yi else 0  for y in Y ])    
-    
+    ZX[i] = np.array([g[split_index[0][Xi.index(x)]](z) if x in Xi else 0 for x in X ])
+    ZY[i] = np.array([g[split_index[1][Yi.index(y)]](z) if y in Yi else 0 for y in Y ])    
 
 # Connect contour points smoothly with a spline
-Fx, Fxz = X, np.clip(XZ[::3][0], 0, 100)
-Fy, Fyz = Y,  np.clip(YZ[::3][0], 0, 100)
+Fx, Fxz = X, np.clip(XZ[::3][2], 0, 100)
+Fy, Fyz = Y,  np.clip(YZ[::3][2], 0, 100)
 forceSplineX, forceSplineY = UnivariateSpline(Fx, Fxz,  s = .2,k=3), UnivariateSpline(Fy,Fyz, s = 2, k = 3)
 
 
 # plt.rcParams['font.size'] = 14
 
+
+
+# %%
 # Plot of force heatmaps using imshow to directly visualise 2D array
 # ----------------------------------------------------2D Plots X axis--------------------------------------------------------         
 fig, ax = plt.subplots(1,1, figsize = (linewidth/2, (1/1.61)*linewidth/2)) 
@@ -503,48 +529,44 @@ cbar.ax.yaxis.set_label_coords(7.5, 0.5)
 cbar.ax.set_ylim(0, 0.03)
 cbar.minorticks_on() 
 
-# # Optionally save image
-# if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
-#     fig.savefig(kwargs['SaveImages'] + os.sep + 'AFM_CrossSectionHeatMap-X.pdf', bbox_inches = 'tight') 
-# plt.show()
+fig.savefig('/mnt/c/Users/Joshg/Documents/Manuscript_Figures/'+ os.sep + 'AFM_CrossSectionHeatMap-X.pdf', bbox_inches = 'tight') 
+plt.show()
 
-# # ----------------------------------------------------2D Plots Y axis--------------------------------------------------------    
-# fig, ax = plt.subplots(1,1, figsize = (linewidth/2, (1/1.61)*linewidth/2)) 
+# ----------------------------------------------------2D Plots Y axis--------------------------------------------------------    
+fig, ax = plt.subplots(1,1, figsize = (linewidth/2, (1/1.61)*linewidth/2)) 
 
-# # 2D heat map plot without interpolation
-# im = ax.imshow(ZY/F_dim, origin= 'lower', cmap=colormap, interpolation='bicubic', norm= normalizer, extent = (YSectionY[0], YSectionY[-1], ZSectionY.min(), ZPadSectionY), interpolation_stage = 'rgba')
+# 2D heat map plot without interpolation
+im = ax.imshow(ZY/F_dim, origin= 'lower', cmap=colormap, interpolation='bicubic', norm= normalizer, extent = (Y[0], Y[-1], 0, Zmax), interpolation_stage = 'rgba')
     
-# # Plot spline force for contour points, contour points themselves, surface boundary using polar coordinates, and hard sphere tip convolution
-# ax.plot(Y,                forceSplineY(Y),         '-', color = 'r', lw = 1, label = 'Fitted Fource Contour')
-# ax.plot(scanPosY[:,0],    scanPosY[:,1]-clearance, ':', color = 'r', lw = 1, label = 'Hard Sphere boundary')
-# ax.plot(surfacePosY[:,0], surfacePosY[:,1],        ':', color = 'w', lw = 1, label = 'Surface boundary') 
+# Plot spline force for contour points, contour points themselves, surface boundary using polar coordinates, and hard sphere tip convolution
+ax.plot(Y,                forceSplineY(Y),         '-', color = 'r', lw = 1, label = 'Fitted Fource Contour')
+ax.plot(scanPosY[:,0],    scanPosY[:,1]-clearance, ':', color = 'r', lw = 1, label = 'Hard Sphere boundary')
+ax.plot(surfacePosY[:,0], surfacePosY[:,1],        ':', color = 'w', lw = 1, label = 'Surface boundary') 
 
-# # Plot indentor geometry
-# ax.plot(r + scanPosY[int(len(scanPosY)/2),0], Zconical(r, 0, r_int, z_int, theta, rIndentor, tip_length) + scanPosY[int(len(scanPosY)/2),1] -clearance,  color = 'w', lw = 1, label = 'Indentor boundary') 
+# Plot indentor geometry
+ax.plot(r + scanPosY[int(len(scanPosY)/2),0], Zconical(r, 0, r_int, z_int, theta, rIndentor, tip_length) + scanPosY[int(len(scanPosY)/2),1] -clearance,  color = 'w', lw = 1, label = 'Indentor boundary') 
 
-# # Set legend and axis labels, limits and title
-# ax.set_xlabel(r'y (${\AA}$)')
-# ax.set_ylabel(r'z (${\AA}$)', rotation=90,  labelpad = 5)
-# ax.set_xlim(YSectionY[0], YSectionY[-1])
-# ax.set_ylim(0, ZPadSectionY )
-# ax.set_yticks( np.round(10*np.linspace(0, ZPadSectionY, 3))/10 )
-# ax.axes.set_aspect('equal') 
-# # ax.tick_params(labelleft=False)
+# Set legend and axis labels, limits and title
+ax.set_xlabel(r'y (${\AA}$)')
+ax.set_ylabel(r'z (${\AA}$)', rotation=90,  labelpad = 5)
+ax.set_xlim(Y[0], Y[-1])
+ax.set_ylim(0, Zmax )
+ax.set_yticks( np.round(10*np.linspace(0, Zmax, 3))/10 )
+ax.axes.set_aspect('equal') 
+# ax.tick_params(labelleft=False)
 
-# # ------------------------------------------------Plot color bar ------------------------------------------------------------
-# cbar= fig.colorbar(im, ax= ax , orientation = 'vertical', fraction=0.01675, pad=0.025)
-# cbar.set_ticks(np.array([0, 0.01, 0.03]))
-# cbar.set_label(r'$\frac{F}{E*R^2}$', rotation=0)
-# cbar.ax.yaxis.set_label_coords(7.5, 0.5)
-# cbar.ax.set_ylim(0, 0.03)
-# cbar.minorticks_on() 
+# ------------------------------------------------Plot color bar ------------------------------------------------------------
+cbar= fig.colorbar(im, ax= ax , orientation = 'vertical', fraction=0.01675, pad=0.025)
+cbar.set_ticks(np.array([0, 0.01, 0.03]))
+cbar.set_label(r'$\frac{F}{E*R^2}$', rotation=0)
+cbar.ax.yaxis.set_label_coords(7.5, 0.5)
+cbar.ax.set_ylim(0, 0.03)
+cbar.minorticks_on() 
 
+fig.savefig('/mnt/c/Users/Joshg/Documents/Manuscript_Figures/'+ os.sep + 'AFM_CrossSectionHeatMap-Y.pdf', bbox_inches = 'tight') 
+# plt.rcParams['font.size'] = 13    
+plt.show()
 
-# # Optionally save image
-# if 'SaveImages' in kwargs.keys() and kwargs['SaveImages'] != False:
-#     fig.savefig(kwargs['SaveImages'] + os.sep + 'AFM_CrossSectionHeatMap-Y.pdf', bbox_inches = 'tight') 
-# # plt.rcParams['font.size'] = 13    
-# plt.show()
 
 
 # %%

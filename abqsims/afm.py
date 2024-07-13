@@ -596,7 +596,7 @@ def ExportVariables(localPath, atom_coord, atom_element, atom_radius, clipped_sc
         f.write(indentorType)
 
 # %%
-def ImportVariables(localPath, ):
+def ImportVariables(localPath):
     '''Import simulation geometry variables from csv files.
 
     Args:
@@ -613,9 +613,7 @@ def ImportVariables(localPath, ):
         scanDims (arr)        : Geometric parameters for defining scan dimensiond [width, height] 
 
     '''
-    ### Creating a folder on the Users system
-    os.makedirs('data', exist_ok=True)
- 
+
     atom_coord      = np.loadtxt(localPath + os.sep + 'data' + os.sep + 'atom_coords.csv', delimiter=",")
     atom_element    = np.loadtxt(localPath + os.sep + 'data' + os.sep + 'atom_elements.csv', dtype = 'str', delimiter=",")
 
@@ -928,7 +926,7 @@ def RemoteFTPFiles(remote_server, files, remotePath, localPath, **kwargs):
         ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
     '''
     ### Creating a folder on the Users system
-    os.makedirs('data', exist_ok=True)
+    os.makedirs(localPath + os.sep + 'data', exist_ok=True)
     
     # SSH to cluster
     ssh_client = SSHconnect(remote_server, **kwargs)
@@ -1037,8 +1035,8 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
     if 'Transfer' not in kwargs.keys() or kwargs['Transfer'] == True:
         
         # Transfer scripts and variable files to remote server
-        RemoteSCPFiles(remote_server, csvfiles, remotePath, path='data', **kwargs)
-        RemoteSCPFiles(remote_server, abqfiles, remotePath, **kwargs)
+        RemoteSCPFiles(remote_server, csvfiles, remotePath, path = localPath+os.sep+'data', **kwargs)
+        RemoteSCPFiles(remote_server, abqfiles, remotePath, path = localPath              , **kwargs)
         
         print('File Transfer Complete')
 
