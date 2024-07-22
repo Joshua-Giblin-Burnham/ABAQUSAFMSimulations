@@ -149,14 +149,6 @@ for k, wrkDir in enumerate(wrkDirs):
 
 
 
-
-
-
-
-
-
-
-
 # %%#########################################################################################
 # Create force spline
 sortedU2 = [np.sort(np.array(U2[i])) for i in range(N)]
@@ -173,7 +165,7 @@ for i in range(N):
 
 g = {}
 for i, v in enumerate(clipped_indices):
-    g[v] = interpolate.make_smoothing_spline(sortedU2[i], sortedRF[i])
+    g[v] = UnivariateSpline(sortedU2[i], sortedRF[i], s=2, k=1)
 
 
 fig, ax = plt.subplots(1,1,figsize=(10,5))
@@ -202,7 +194,7 @@ for i in range(N):
 f = {}
 for i, v in enumerate(clipped_indices):
     # print(sortedU2[i])
-    f[v] = interpolate.UnivariateSpline(sortedRF[i], sortedU2[i], s=2, k=1)
+    f[v] = UnivariateSpline(sortedRF[i], sortedU2[i], s=2, k=1)
 
 
 fig, ax = plt.subplots(1,1,figsize=(10,5))
@@ -258,41 +250,16 @@ dirFile.remove('7mv-sqz-trace-profile.txt')
 
 force_data, data_length = np.zeros([len(dirFile)]), np.zeros(len(dirFile), dtype=int)
 cross_section_height_data = np.zeros([len(dirFile),190,2])
-
 for i, file in enumerate(dirFile):
     force_data[i] = float(np.loadtxt(dataPath + file, dtype=str, delimiter=",", skiprows=2, max_rows=1)[1][:-2])
     temp_data = np.loadtxt(dataPath+ file, dtype=float, delimiter=",", skiprows=3)
     data_length[i] = len(temp_data)
-    cross_section_height_data[i,:len(temp_data)] = temp_data*10
+    cross_section_height_data[i,:len(temp_data)] = temp_data*10 # turn to angstroms
+
 
 # Sort data  
-force_data = np.sort(force_data)
 cross_section_height_data = np.array([x for _, x in sorted(zip(force_data, cross_section_height_data))])
-
-
-##########################################################################################################
-# Analysis for experimental data
-
-Nf = len(force_data)
-indentationForce = np.sort(np.copy(force_data))*10
-
-# Produce analysis on experimental data
-FWHM_exp, AreaX_exp = np.zeros(Nf), np.zeros(Nf)
-for i in range(Nf):
-    # Extract y coordinates and z compontents of force contour across x domain
-    Fy, Fz = cross_section_height_data[i,:data_length[i],0],  cross_section_height_data[i,:data_length[i],1]
-
-    # Connect contour points smoothly with a spline
-    forceSpline = UnivariateSpline(Fy, Fz, s = 0.1)         
-
-    # Half maxima can be calculated by finding roots of spline 
-    roots = UnivariateSpline(Fy, Fz - (Fz.min() + Fz.max())/2, s = 0.01).roots()             
-    FWHM_exp[i] = roots[1]-roots[0]
-
-    AreaX_exp[i] = np.trapz(Fy, Fz)      
-
-
-
+force_data = np.sort(force_data)
 
 
 #%%
@@ -311,11 +278,12 @@ surfacePosX, surfacePosY = surfacePos.reshape(yNumS, xNumS, 3)[ysi,:,[0,2]].T, s
 
 
 
-
-
 # %%#########################################################################################
 # Force profiles
 # print(list(longitude_crosssection))
+
+Nf = len(force_data)
+indentationForce = np.sort(np.copy(force_data))*10
 
 X, Y   = scanPos.reshape(yNum, xNum, 3)[yi,:,[0,2]].T[:,0], scanPos.reshape(yNum, xNum, 3)[:,xi,[1,2]][:,0]
 X0, Y0 = np.linspace(X[0], X[-1], 250), np.linspace(Y[0], Y[-1], 250)
@@ -337,24 +305,26 @@ DNAheight = np.array([[np.max(XZ[i]),np.max(YZ[i])] for i, forceRef in enumerate
 #  --------------------------------------------X Profile Plot---------------------------------------------------
 plt.rcParams['font.size'] = 11
 fig, ax = plt.subplots(1, 1, figsize = (linewidth/2, (1/1.61)*linewidth/2))
-for i, forceRef in enumerate(indentationForce[::3]):
-    Fx, Fxz = X, np.clip(XZ[::3][i], 0, 100)
-    forceSpline = UnivariateSpline(Fx, Fxz, s = .2,k=3) 
+for i, forceRef in enumerate(indentationForce[1::3]):
+    Fx, Fxz = X, np.clip(XZ[1::3][i], 0, 100)
+    forceSpline = UnivariateSpline(Fx, Fxz, s =.2,k=3) 
     
     plot= ax.plot(X0, forceSpline(X0), '-',  label='{0:.2f}'.format(forceRef/10), lw=0.75)
     # ax.plot(Fx,Fxz, 'x', color = plot[0].get_color() )
+# ax.plot(scanPosX[:,0],    scanPosX[:,1]-clearance, ':', color = 'r', lw = 1, label = 'Hard sphere\nboundary ')
+ax.fill_between(surfacePosX[:,0][::-1], surfacePosX[:,1], interpolate=True, color='grey', alpha=0.2, label = 'DNA Surface ' )
 
 data = longitude_crosssection[:,0]-np.max(longitude_crosssection[:,0])/2
-ax.plot(0.875*(data-15), longitude_crosssection[:,1], ':', color = 'k', ms=3)
+ax.plot(0.875*(data[:]-17), longitude_crosssection[:][:,1], '^', color = ax.lines[0].get_color(), ms=1.5, lw=1)
 
 
 ax.set_xlabel(r'x (${\AA}$)')
 ax.set_ylabel(r'z (${\AA}$)')
-ax.set_xlim(-75, 75)
-# ax.set_ylim(15, 22)
+ax.set_xlim(X.min(),X.max())
+ax.set_ylim(13, 22)
 ax.set_xticks([-50,0,50])
 ax.set_yticks([15,20])
-ax.axes.set_aspect(7) 
+ax.axes.set_aspect(6) 
 # ax.legend(title = 'Force (pN):', frameon=False, ncol=1, labelspacing=0, loc=[0.95,0.175])
 
 fig.savefig('/mnt/c/Users/Joshg/Documents/Manuscript_Figures/' + os.sep + 'AFM_XProfile.pdf', bbox_inches = 'tight') 
@@ -369,27 +339,32 @@ plt.show()
 # %%
 #  --------------------------------------------Y Profile Plot---------------------------------------------------
 
-plt.rcParams['figure.dpi'] = 2560
 fig, ax = plt.subplots(1, 1, figsize = (linewidth/2, (1/1.61)*linewidth/2))
+n=1
 
-for i, forceRef in enumerate(indentationForce[::3]):
-    Fy, Fyz      = Y,  np.clip(YZ[::3][i], 0, 100)
+for i, forceRef in enumerate(indentationForce[n::3]):
+    Fy, Fyz      = Y,  np.clip(YZ[n::3][i], 0, 100)
     forceSpline  = UnivariateSpline(Fy,Fyz, s = 2, k = 3)
     
     plot = ax.plot(Y0[::-1], forceSpline(Y0), '-', label= '{0:0.2f}'.format(forceRef/10), lw=0.85)
     # ax.plot(Fy[::-1], Fyz, 'x', color = plot[0].get_color(), label= '{0:0.2f}'.format(forceRef/10), lw=0.65, ms=2)
 
 # for i, forceRef in enumerate(force_data):
+    if i==0:
+        Y_exp, Z_exp = cross_section_height_data[n::3][i,:data_length[i],0]-90, cross_section_height_data[n::3][i,:data_length[i],1]
     if i == 1:
-        Y_exp, Z_exp = cross_section_height_data[i+1,:data_length[i+1],0]-100, cross_section_height_data[i+1,:data_length[i+1],1]
+        Y_exp, Z_exp = cross_section_height_data[n::3][i,:data_length[i],0]-92.5, cross_section_height_data[n::3][i,:data_length[i],1]
     else: 
-        Y_exp, Z_exp = cross_section_height_data[i+1,:data_length[i+1],0]-90, cross_section_height_data[i+1,:data_length[i+1],1]
+        Y_exp, Z_exp = cross_section_height_data[n::3][i,:data_length[i],0]-87.5, cross_section_height_data[n::3][i,:data_length[i],1]
 
-    ax.plot(Y_exp[::5], Z_exp[::5], '^', color = plot[0].get_color(), ms=2.5)
+    ax.plot(Y_exp[::3], Z_exp[::3],  '^', color = plot[0].get_color(), lw=1, ms=1.5)
     # ax.plot(Y_exp[::5], Z_exp[::5], ':', color = plot[0].get_color(),  lw=0.85)
 # ax.plot(surfacePosY[:,0][::-1], surfacePosY[:,1], ':', color = 'k', lw = 1, label = 'DNA Surface ') 
 # ax.plot(scanPosY[:,0],    scanPosY[:,1]-clearance, 'x', color = 'r', lw = 1, ms=2)#, label = 'Hard Sphere boundary')
-ax.plot(scanPosY[:,0],    scanPosY[:,1]-clearance, ':', color = 'r', lw = 1, label = 'Hard sphere \n boundary ')
+# ax.plot(scanPosY[:,0],    scanPosY[:,1]-clearance, ':', color = 'r', lw = 1, label = 'Hard sphere\nboundary ')
+
+
+ax.fill_between(surfacePosY[:,0][::-1], surfacePosY[:,1], interpolate=True, color='grey', alpha=0.2, label = 'DNA surface ' )
 
 ax.set_xlabel(r'y (${\AA}$)')
 ax.set_ylabel(r'z (${\AA}$)')
@@ -397,27 +372,28 @@ ax.set_xlim(-75, 75)
 ax.set_ylim(0, 22)
 ax.set_xticks([-50,0,50])
 ax.set_yticks([0,10,20])
-ax.axes.set_aspect(2.35) 
+ax.axes.set_aspect(3) 
 
 # ax.legend(title = 'Force (pN):', title_fontsize = 8, fontsize=8, frameon=False, ncol=1, labelspacing=0, loc=[0.62,0.32])
 
 handles, labels = ax.get_legend_handles_labels()
+handles.append(mpl.lines.Line2D([0], [0], marker='^', linestyle='None', markersize=1.5, color='gray'))
+labels.append('Experimental data')
 
 # Create a legend for the first line.
-first_legend = ax.legend(handles=handles[:-1], labels=labels[:-1],title = 'Force (pN):', title_fontsize = 8, 
-                         fontsize=8, frameon=False, ncol=1, labelspacing=0, loc=[0.02,0.32])
+first_legend = ax.legend(handles=handles[:3], labels=labels[:3],title = 'Force (pN):', title_fontsize = 8, 
+                         fontsize=8, frameon=False, ncol=1, labelspacing=0,loc=[0.65,0.5] )
 
 # Add the legend manually to the Axes.
 ax.add_artist(first_legend)
 
 # Create another legend for the second line.
-ax.legend(handles=handles[-1:], labels=labels[-1:], fontsize=7, frameon=False, 
-          ncol=1, labelspacing=0, loc=[0.625,0.6])
+ax.legend(handles=handles[-2:][::-1], labels=labels[-2:][::-1], fontsize=7, frameon=False, 
+          ncol=1, labelspacing=0, loc=[0.0,0.7])
 
 fig.savefig('/mnt/c/Users/Joshg/Documents/Manuscript_Figures/'+ os.sep + 'AFM_YProfile.pdf', bbox_inches = 'tight') 
 # plt.show()
 plt.rcParams['font.size'] = 13    
-plt.rcParams['figure.dpi'] = 256
 
 
 
@@ -439,8 +415,8 @@ plt.rcParams['figure.dpi'] = 256
 #  --------------------------------------------DNA Height Plot---------------------------------------------------
 fig, ax = plt.subplots(figsize = (linewidth/2, 1/1.61*linewidth/2))
 
-plot0 = ax.plot(indentationForce/10, DNAheight[:,1], label = 'DNA Height', color = ax._get_lines.get_next_color())
-ax.plot(force_height_data[:,0], force_height_data[:,1], '^', label = 'Experimental DNA Height', color = plot0[0].get_color(), ms=2.5)
+plot0 = ax.plot(indentationForce/10, DNAheight[:,1], label = 'DNA Height', color = 'k')
+ax.plot(force_height_data[:,0], force_height_data[:,1], '^', label = 'Experimental DNA Height', color = 'k', ms=2.5)
 
 ax.axes.set_aspect(10) 
 ax.set_xlabel("Indentation force (pN)")
