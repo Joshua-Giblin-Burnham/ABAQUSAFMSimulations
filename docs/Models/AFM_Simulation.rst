@@ -2,7 +2,7 @@
 AFM Simulation
 ============================
 
-.. image:: https://github.com/Joshua-Giblin-Burnham/ABAQUS-AFM-Simulations/main/Reports/Report%20Latex/Figures/ScanPositions%20diagram-1.png
+.. image:: https://raw.githubusercontent.com/Joshua-Giblin-Burnham/ABAQUS-AFM-Simulations/main/Reports/Report_Latex/Figures/ScanPositions%20diagram-1.png
     
 abqsims.afm is the python based interface to produce AFM simulations of biomolecules and has various composite functions.. Simulating AFM images requires the calculation of contours of constant indentation force across a sample. Using Finite Element Modelling (FEM), the sample surface and probe tip geometry are recreated, and AFM raster scan dynamics are replicated by performing independent indentations across the surface. Biological structures are produced using Protein Data Bank (PDB) files with geometric dimensions in $\AA$. For simplicity, the biomolecule is modelled as an elastic material produced from the assembly of the individual atoms (with van der Waals radius). The molecule is partially embedded in a rigid base/ substrate and fixed at its base to simulate a soft molecule absorbed onto a solid support. The structure is assumed to be a continuous, homogeneous and isotropy elastic material. 
 
