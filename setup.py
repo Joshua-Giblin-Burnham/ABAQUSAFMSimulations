@@ -23,7 +23,7 @@ setup(
 
     # Author 
     author='J. Giblin-Burnham',
-    author_email='j.giblin-burnham@hotmail.com'
+    author_email='j.giblin-burnham@hotmail.com',
 
     # Website
     url='https://abaqus-afm-simulations.readthedocs.io/en/latest/index.html',
