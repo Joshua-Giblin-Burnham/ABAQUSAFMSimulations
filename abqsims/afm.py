@@ -560,7 +560,7 @@ def ExportVariables(localPath, atom_coord, atom_element, atom_radius, clipped_sc
     '''Export simulation variables as csv and txt files to load in abaqus python scripts.
     
     Args:
-        localPath (str)      : Path to local file/directory
+        localPath (str)        : Path to local file/directory
         atom_coord (arr)       :  Array of coordinates [x,y,z] for atoms in biomolecule 
         atom_element (arr)     :  Array of elements names(str) for atoms in biomolecule 
         atom_radius (dict)     :  Dictionary containing van der waals radii each the element in the biomolecule 
@@ -998,7 +998,7 @@ def LocalSubmission():
     get_ipython().system('abaqus cae -noGUI AFMODBAnalysis.py')
 
 # %%
-def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, abqCommand, fileName, subData, scanPos, clipped_scanPos, scanDims, binSize, clearance, **kwargs):
+def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqscripts, abqCommand, fileName, subData, scanPos, clipped_scanPos, scanDims, binSize, clearance, **kwargs):
     '''Function to run simulation and scripts on the remote servers. 
     
     Files for variables are transfered, ABAQUS scripts are run to create parts and input files. A bash file is created and submitted to run simulation for 
@@ -1010,7 +1010,7 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
         remotePath (str)      : Path to remote file/directory
         localPath (str)       : Path to local file/directory
         csvfiles (list)       : List of csv and txt files to transfer to remote server
-        abqfiles (list)       : List of abaqus script files to transfer to remote server
+        abqscripts (list)     : List of abaqus script files to transfer to remote server
         abqCommand (str)      : Abaqus command to execute and run script
         fileName (str)        : Base File name for abaqus input files
         subData (str)         : Data for submission to serve queue [walltime, memory, cpus]
@@ -1035,8 +1035,8 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
     if 'Transfer' not in kwargs.keys() or kwargs['Transfer'] == True:
         
         # Transfer scripts and variable files to remote server
-        RemoteSCPFiles(remote_server, csvfiles, remotePath, path = localPath+os.sep+'data', **kwargs)
-        RemoteSCPFiles(remote_server, abqfiles, remotePath, path = localPath              , **kwargs)
+        RemoteSCPFiles(remote_server, csvfiles, remotePath, path='data', **kwargs)
+        RemoteSCPFiles(remote_server, abqscripts, remotePath, **kwargs)
         
         print('File Transfer Complete')
 
@@ -1046,22 +1046,20 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
         print('Creating Parts ...')
         
         # Create Molecule and Tip
-        script = 'AFMSurfaceModel.py'
-        RemoteCommand(remote_server, script, remotePath, abqCommand, **kwargs)
+        RemoteCommand(remote_server, abqscripts[0], remotePath, abqCommand, **kwargs)
         
         t1 = time.time()
-        print('Part Creation Complete : ' + str(timedelta(seconds=t1-t0)) )
+        print('Part Creation Complete - ' + str(timedelta(seconds=t1-t0)) )
     
     if 'Input' not in kwargs.keys() or kwargs['Input'] == True:
         t0 = time.time()
         print('Producing Input Files ...')
         
         # Produce simulation and input files
-        script = 'AFMRasterScan.py'
-        RemoteCommand(remote_server, script, remotePath, abqCommand, **kwargs)
+        RemoteCommand(remote_server, abqscripts[1], remotePath, abqCommand, **kwargs)
         
         t1 = time.time()
-        print('Input File Complete : ' + str(timedelta(seconds=t1-t0)) )
+        print('Input File Complete - ' + str(timedelta(seconds=t1-t0)) )
 
     #  --------------------------------------------Batch File Submission----------------------------------------------------
     if 'Batch' not in kwargs.keys() or kwargs['Batch'] == True:
@@ -1072,7 +1070,7 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
         BatchSubmission(remote_server, fileName, subData, clipped_scanPos, scanPos, scanDims, binSize, clearance, remotePath, **kwargs) 
         
         t1 = time.time()
-        print('Batch Submission Complete : '+ str(timedelta(seconds=t1-t0)) )
+        print('Batch Submission Complete - '+ str(timedelta(seconds=t1-t0)) )
     
     if 'Queue' not in kwargs.keys() or kwargs['Queue'] == True:
         t0 = time.time()
@@ -1082,7 +1080,7 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
         QueueCompletion(remote_server, **kwargs)
         
         t1 = time.time()
-        print('ABAQUS Simulation Complete : '+ str(timedelta(seconds=t1-t0)) )
+        print('ABAQUS Simulation Complete - '+ str(timedelta(seconds=t1-t0)) )
 
     #  -------------------------------------------ODB Analysis Submission----------------------------------------------------
     if 'Analysis' not in kwargs.keys() or kwargs['Analysis'] == True:
@@ -1090,11 +1088,10 @@ def RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, 
         print('Running ODB Analysis...')
         
         # ODB analysis script to run, extracts data from simulation and sets it in csv file on server
-        script = 'AFMODBAnalysis.py'
-        RemoteCommand(remote_server, script, remotePath, abqCommand, **kwargs)
+        RemoteCommand(remote_server, abqscripts[2], remotePath, abqCommand, **kwargs)
         
         t1 = time.time()
-        print('ODB Analysis Complete : ' + str(timedelta(seconds=t1-t0)) )
+        print('ODB Analysis Complete - ' + str(timedelta(seconds=t1-t0)) )
 
     #  -----------------------------------------------File Retrieval----------------------------------------------------------
     if 'Retrieval' not in kwargs.keys() or kwargs['Retrieval'] == True:
@@ -2636,7 +2633,7 @@ def YoungPlot(SectionData, rIndentor, elasticProperties, basePos, **kwargs):
 
 
 # %%
-def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, subData, 
+def AFMSimulation(remote_server, remotePath, localPath, abqscripts, abqCommand, fileName, subData, 
                   pdb, rotation, surfaceApprox, indentorType, rIndentor, theta_degrees, tip_length, 
                   indentionDepth, forceRef, contrast, binSize, clearance, elasticProperties, meshSurface, meshBase, meshIndentor, 
                   timePeriod, timeInterval, **kwargs):
@@ -2655,6 +2652,7 @@ def AFMSimulation(remote_server, remotePath, localPath, abqCommand, fileName, su
                                  -  scratch (str):  Path to scratch directory on remote server
         remotePath (str)       : Path to remote file/directory
         localPath (str)        : Path to local file/directory
+        abqscripts (list)      : List of abaqus script files to transfer to remote server
         abqCommand (str)       : Abaqus command to execute and run script
         fileName (str)         : Base File name for abaqus input files
         subData (list)         : Data for submission to serve queue [walltime, memory, cpus]

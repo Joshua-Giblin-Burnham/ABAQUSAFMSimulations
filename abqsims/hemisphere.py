@@ -213,10 +213,11 @@ def ScanGeometry(indentorType, tipDims, baseDims, rSurface, Nb, clearance):
 # #### File Import/ Export Function
 
 # %%
-def ExportVariables(rackPos, variables, baseDims, tipDims, indentorType, elasticProperties ):
+def ExportVariables(localPath, rackPos, variables, baseDims, tipDims, indentorType, elasticProperties ):
     '''Export simulation variables as csv and txt files to load in abaqus python scripts.
 
     Args:
+        localPath (str)         : Path to local file/directory
         rackPos (arr)           : Array of coordinates [x,z] of scan positions to image biomolecule 
         variables (list)        : List of simulation variables: [timePeriod, timeInterval, binSize, meshSurface, meshBase, meshIndentor, indentionDepth, surfaceHeight]
         baseDims (list)         : Geometric parameters for defining base/ substrate structure [width, height, depth] 
@@ -225,32 +226,32 @@ def ExportVariables(rackPos, variables, baseDims, tipDims, indentorType, elastic
         elasticProperties (arr) : Array of surface material properties, for elastic surface [Youngs Modulus, Poisson Ratio]
     '''
     ### Creating a folder on the Users system
-    os.makedirs('data', exist_ok=True)
+    os.makedirs(localPath + os.sep + 'data', exist_ok=True)
 
-    np.savetxt("data"+os.sep+"elasticProperties.csv", elasticProperties, fmt='%s', delimiter=",")
-    np.savetxt("data"+os.sep+"variables.csv", variables, fmt='%s', delimiter=",")
-    np.savetxt("data"+os.sep+"rackPos.csv", rackPos, fmt='%s', delimiter=",")
-    np.savetxt("data"+os.sep+"baseDims.csv", baseDims, fmt='%s', delimiter=",")
-    np.savetxt("data"+os.sep+"tipDims.csv", tipDims, fmt='%s', delimiter=",")
+    np.savetxt(localPath + os.sep + "data"+os.sep+"elasticProperties.csv", elasticProperties, fmt='%s', delimiter=",")
+    np.savetxt(localPath + os.sep + "data"+os.sep+"variables.csv", variables, fmt='%s', delimiter=",")
+    np.savetxt(localPath + os.sep + "data"+os.sep+"rackPos.csv", rackPos, fmt='%s', delimiter=",")
+    np.savetxt(localPath + os.sep + "data"+os.sep+"baseDims.csv", baseDims, fmt='%s', delimiter=",")
+    np.savetxt(localPath + os.sep + "data"+os.sep+"tipDims.csv", tipDims, fmt='%s', delimiter=",")
     
-    with open('indentorType.txt', 'w', newline = '\n') as f:
+    with open(localPath + os.sep + 'data'+os.sep+'indentorType.txt', 'w', newline = '\n') as f:
         f.write(indentorType)
 
 # %%
-def ImportVariables():
+def ImportVariables(localPath):
     '''Import simulation geometry variables from csv files.
-    
+
+    Args:
+        localPath (str)  : Path to local file/directory
+
     Returns:
         variables (list) : List of simulation variables: [timePeriod, timeInterval, binSize, meshSurface, meshBase, meshIndentor, indentionDepth, surfaceHeight]
         baseDims (list)  : Geometric parameters for defining base/ substrate structure [width, height, depth]             
         rackPos (arr)    : Array of coordinates [x,z] of scan positions to image biomolecule  
     '''
-    ### Creating a folder on the Users system
-    os.makedirs('data', exist_ok=True)
-
-    variables = np.loadtxt("data"+os.sep+"variables.csv", delimiter=",")
-    baseDims  = np.loadtxt("data"+os.sep+"baseDims.csv", delimiter=",")
-    rackPos   = np.loadtxt("data"+os.sep+"rackPos.csv", delimiter=",")
+    variables = np.loadtxt(localPath + os.sep +"data"+os.sep+"variables.csv", delimiter=",")
+    baseDims  = np.loadtxt(localPath + os.sep +"data"+os.sep+"baseDims.csv", delimiter=",")
+    rackPos   = np.loadtxt(localPath + os.sep +"data"+os.sep+"rackPos.csv", delimiter=",")
     
     return variables, baseDims, rackPos
 
@@ -520,7 +521,7 @@ def RemoteFTPFiles(remote_server, files, remotePath, localPath, **kwargs):
         ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
     '''
     ### Creating a folder on the Users system
-    os.makedirs('data', exist_ok=True)
+    os.makedirs(localPath + os.sep + 'data', exist_ok=True)
     
     # SSH to cluster
     ssh_client = SSHconnect(remote_server, **kwargs)
@@ -582,7 +583,7 @@ def Remote_Terminal(remote_server, **kwargs):
 # Function to run simulation and scripts on the remote servers. Files for variables are transfered, ABAQUS scripts are run to create parts and input files. A bash file is created and submitted to run simulation for batch of inputs. Analysis of odb files is performed and data transfered back to local machine. Using keyword arguments invidual parts of simulation previously completed can be skipped.
 
 # %%
-def RemoteSubmission(remote_server, remotePath,  csvfiles, abqfiles, abqCommand, fileName, subData, rackPos, **kwargs):
+def RemoteSubmission(remote_server, remotePath, localPath, csvfiles, abqscripts, abqCommand, fileName, subData, rackPos, **kwargs):
     '''Function to run simulation and scripts on the remote servers. 
     
     Files for variables are transfered, ABAQUS scripts are run to create parts and input files. A bash file is created and submitted to run simulation for 
@@ -590,13 +591,14 @@ def RemoteSubmission(remote_server, remotePath,  csvfiles, abqfiles, abqCommand,
     
     Args:
         remote_server (list) : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
-        remotePath (str) : Path to remote file/directory
-        csvfiles (list)  : List of csv and txt files to transfer to remote server
-        abqfiles (list)  : List of abaqus script files to transfer to remote server
-        abqCommand (str) : Abaqus command to execute and run script
-        fileName (str)   : Base File name for abaqus input files
-        subData (str)    : Data for submission to serve queue [walltime, memory, cpus]
-        rackPos (arr)    : Array of scan positions and initial height [x,z] to image 
+        remotePath (str)  : Path to remote file/directory
+        localPath (str)   : Path to local file/directory
+        csvfiles (list)   : List of csv and txt files to transfer to remote server
+        abqscripts (list) : List of abaqus script files to transfer to remote server
+        abqCommand (str)  : Abaqus command to execute and run script
+        fileName (str)    : Base File name for abaqus input files
+        subData (str)     : Data for submission to serve queue [walltime, memory, cpus]
+        rackPos (arr)     : Array of scan positions and initial height [x,z] to image 
     
     Keyword Args:           
         ProxyJump (proxy_server) : Optional define whether to use a Proxy Jump to ssh through firewall; defines varibles for proxy server in list format [host, port, username, password, sshkey, home, scratch]
@@ -604,8 +606,8 @@ def RemoteSubmission(remote_server, remotePath,  csvfiles, abqfiles, abqCommand,
     '''
     #  ---------------------------------------------File Transfer----------------------------------------------------------       
     # Transfer scripts and variable files to remote server
-    RemoteSCPFiles(remote_server, csvfiles, remotePath, path = 'data', **kwargs)
-    RemoteSCPFiles(remote_server, abqfiles, remotePath, **kwargs)
+    RemoteSCPFiles(remote_server, csvfiles, remotePath, path = localPath+os.sep+'data', **kwargs)
+    RemoteSCPFiles(remote_server, abqscripts, remotePath, **kwargs)
 
     print('File Transfer Complete')
 
@@ -614,8 +616,7 @@ def RemoteSubmission(remote_server, remotePath,  csvfiles, abqfiles, abqCommand,
     print('Producing Input Files ...')
 
     # Produce simulation and input files
-    script = 'AFMtestRasterScan.py'
-    RemoteCommand(remote_server, script, remotePath, abqCommand, **kwargs)
+    RemoteCommand(remote_server, abqscripts[0], remotePath, abqCommand, **kwargs)
 
     t1 = time.time()
     print('Input File Complete - ' + str(timedelta(seconds=t1-t0)) )
@@ -660,7 +661,7 @@ def DataRetrieval(remote_server, wrkDir, localPath, csvfiles, dataFiles, indento
         RemoteFTPFiles(remote_server, file, wrkDir+'/IndenterRadius7', localPath, **kwargs)
     
     # Set simulation variables used to process data
-    variables, baseDims, rackPos  = ImportVariables()
+    variables, baseDims, rackPos  = ImportVariables(localPath)
     timePeriod, timeInterval, binSize, indentionDepth, meshIndentor, meshSurface, rSurface = variables 
     
     # Set array size variables
@@ -693,9 +694,9 @@ def DataRetrieval(remote_server, wrkDir, localPath, csvfiles, dataFiles, indento
 
                 else:
                     # If files are available load data in to temperary variable 
-                    U2 = np.array(np.loadtxt("data"+os.sep+dataFiles[0], delimiter=","))
-                    RF = np.array(np.loadtxt("data"+os.sep+dataFiles[1], delimiter=","))  
-                    NrackPos[index] = np.array(np.loadtxt("data"+os.sep+dataFiles[2], delimiter=",")) 
+                    U2 = np.array(np.loadtxt(localPath + os.sep +"data"+os.sep+dataFiles[0], delimiter=","))
+                    RF = np.array(np.loadtxt(localPath + os.sep +"data"+os.sep+dataFiles[1], delimiter=","))  
+                    NrackPos[index] = np.array(np.loadtxt(localPath + os.sep +"data"+os.sep+dataFiles[2], delimiter=",")) 
                     
                     # Loop through data and store indentations with less zeros/ higher sums of forces
                     for i in range(len(RF)):
@@ -721,9 +722,9 @@ def DataRetrieval(remote_server, wrkDir, localPath, csvfiles, dataFiles, indento
 
             else:
                 # Load and set data in array for all indentors
-                TotalU2[index]  = np.array(np.loadtxt("data"+os.sep+dataFiles[0], delimiter=","))
-                TotalRF[index]  = np.array(np.loadtxt("data"+os.sep+dataFiles[1], delimiter=","))  
-                NrackPos[index] =  np.array(np.loadtxt("data"+os.sep+dataFiles[2], delimiter=","))  
+                TotalU2[index]  = np.array(np.loadtxt(localPath + os.sep +"data"+os.sep+dataFiles[0], delimiter=","))
+                TotalRF[index]  = np.array(np.loadtxt(localPath + os.sep +"data"+os.sep+dataFiles[1], delimiter=","))  
+                NrackPos[index] =  np.array(np.loadtxt(localPath + os.sep +"data"+os.sep+dataFiles[2], delimiter=","))  
 
     return variables, TotalU2, TotalRF, NrackPos
 
@@ -1117,7 +1118,7 @@ def Postprocessing(TotalU2, TotalRF, NrackPos, Nb, Nt, courseGrain, refForces, i
 # Final simulation function
 
 # %%
-def  HemisphereSimulation(remote_server, wrkDir, localPath, abqCommand, fileName, subData, 
+def  HemisphereSimulation(remote_server, wrkDir, localPath, abqscripts, abqCommand, fileName, subData, 
                   indentorType, indentorRadius, theta_degrees, tip_length, indentionDepths, baseDims, rSurface, 
                   refForces, courseGrain, binSize, clearance, meshSurface, meshIndentor, timePeriod, timeInterval, 
                   elasticProperties, **kwargs):
@@ -1130,6 +1131,7 @@ def  HemisphereSimulation(remote_server, wrkDir, localPath, abqCommand, fileName
         remote_server (list)    : Contains varibles for remote server in list format [host, port, username, password, sshkey, home, scratch]
         wrkDir (str)            : Working directory extension
         localPath (str)         : Path to local file/directory
+        abqscripts (list)       : List of abaqus script files to transfer to remote server
         abqCommand (str)        : Abaqus command to execute and run script
         fileName (str)          : Base File name for abaqus input files
         subData (str)           : Data for submission to serve queue [walltime, memory, cpus]
@@ -1201,16 +1203,14 @@ def  HemisphereSimulation(remote_server, wrkDir, localPath, abqCommand, fileName
             #  -------------------------------------------Export Variable-----------------------------------------------------
             # Set list of simulation variables and export to current directory
             variables = [timePeriod, timeInterval, binSize, indentionDepth, meshIndentor, meshSurface, rSurface]
-            ExportVariables(rackPos, variables, baseDims, tipDims, indentorType, elasticProperties )
+            ExportVariables(localPath, rackPos, variables, baseDims, tipDims, indentorType, elasticProperties )
 
             
             #  -------------------------------------------Remote Submission---------------------------------------------------
             remotePath = wrkDir +'/IndenterRadius'+str(int(rIndentor))
-
-            abqfiles = ('AFMtestRasterScan.py','AFMtestODBAnalysis.py')
             csvfiles = ( "rackPos.csv", "variables.csv","baseDims.csv", "tipDims.csv", "indentorType.txt", "elasticProperties.csv" )
 
-            RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqfiles, abqCommand, fileName, subData, rackPos, **kwargs)
+            RemoteSubmission(remote_server, remotePath, localPath,  csvfiles, abqscripts, abqCommand, fileName, subData, rackPos, **kwargs)
    
         t1 = time.time()
         print('Main Submission Complete - ' + str(timedelta(seconds=t1-t0)) + '\n' )     
@@ -1239,10 +1239,9 @@ def  HemisphereSimulation(remote_server, wrkDir, localPath, abqCommand, fileName
             print('Indentor Radius:', rIndentor) 
             
             # ODB analysis script to run, extracts data from simulation and sets it in csv file on server
-            script     = 'AFMtestODBAnalysis.py'
             remotePath = wrkDir + '/IndenterRadius'+str(int(rIndentor))
             
-            RemoteCommand(remote_server, script, remotePath, abqCommand)
+            RemoteCommand(remote_server, abqscripts[1], remotePath, abqCommand)
         
         t1 = time.time()
         print('ODB Analysis Complete - ' + str(timedelta(seconds=t1-t0)) + '\n')
@@ -1260,10 +1259,10 @@ def  HemisphereSimulation(remote_server, wrkDir, localPath, abqCommand, fileName
         variables, TotalU2, TotalRF, NrackPos = DataRetrieval(remote_server, wrkDir, localPath, csvfiles, dataFiles, indentorRadius, **kwargs)
 
         # Export simulation data so it is saved in current directory for future use (save as a 2d array instead of 3d)
-        np.savetxt("data"+os.sep+"variables.csv", variables, fmt='%s', delimiter=",")
-        np.savetxt("data"+os.sep+"TotalU2.csv", TotalU2.reshape(TotalU2.shape[0], -1), fmt='%s', delimiter=",")
-        np.savetxt("data"+os.sep+"TotalRF.csv", TotalRF.reshape(TotalRF.shape[0], -1), fmt='%s', delimiter=",")
-        np.savetxt("data"+os.sep+"NrackPos.csv", NrackPos.reshape(NrackPos.shape[0], -1), fmt='%s', delimiter=",")
+        np.savetxt(localPath+os.sep+"data"+os.sep+"variables.csv", variables, fmt='%s', delimiter=",")
+        np.savetxt(localPath+os.sep+"data"+os.sep+"TotalU2.csv", TotalU2.reshape(TotalU2.shape[0], -1), fmt='%s', delimiter=",")
+        np.savetxt(localPath+os.sep+"data"+os.sep+"TotalRF.csv", TotalRF.reshape(TotalRF.shape[0], -1), fmt='%s', delimiter=",")
+        np.savetxt(localPath+os.sep+"data"+os.sep+"NrackPos.csv", NrackPos.reshape(NrackPos.shape[0], -1), fmt='%s', delimiter=",")
 
         t1 = time.time()
         print('File Retrevial Complete' + '\n')  
@@ -1277,14 +1276,14 @@ def  HemisphereSimulation(remote_server, wrkDir, localPath, abqCommand, fileName
         
         # Check if simulation files are accessible in curent directory to use if pre=processing skipped
         try:
-            variables, baseDims, rackPos  = ImportVariables()
+            variables, baseDims, rackPos  = ImportVariables(localPath)
             timePeriod, timeInterval, binSize, indentionDepth, meshIndentor, meshSurface, rSurface = variables
             Nb, Nt= int(baseDims[0]/binSize)+1, int(timePeriod/ timeInterval)+1
             
             # Load saved simulation data and reshape as data sved as 2d array,  true shape is 3d
-            TotalU2  = np.array(np.loadtxt("data"+os.sep+'TotalU2.csv', delimiter=",")).reshape(len(indentorRadius), Nb, Nt)
-            TotalRF  = np.array(np.loadtxt("data"+os.sep+'TotalRF.csv', delimiter=",")).reshape(len(indentorRadius), Nb, Nt)    
-            NrackPos = np.array(np.loadtxt("data"+os.sep+'NrackPos.csv', delimiter=",")).reshape(len(indentorRadius), Nb, 2)  
+            TotalU2  = np.array(np.loadtxt(localPath+os.sep+"data"+os.sep+'TotalU2.csv', delimiter=",")).reshape(len(indentorRadius), Nb, Nt)
+            TotalRF  = np.array(np.loadtxt(localPath+os.sep+"data"+os.sep+'TotalRF.csv', delimiter=",")).reshape(len(indentorRadius), Nb, Nt)    
+            NrackPos = np.array(np.loadtxt(localPath+os.sep+"data"+os.sep+'NrackPos.csv', delimiter=",")).reshape(len(indentorRadius), Nb, 2)  
 
         # If file missing prompt user to import/ produce files 
         except:
